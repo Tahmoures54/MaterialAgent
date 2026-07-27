@@ -1,0 +1,178 @@
+{
+    "company": "FARASAKOU",
+    "project_name": "Storage Development",
+    "project_code": "001",
+    "client_name": "",
+    "contract_no": "",
+    "project_location": "",
+    "version": "2.0.0",
+    "default_theme": "light",
+    "default_language": "en",
+    "license_required": true,
+
+    "database": {
+        "path": "aimat.db",
+        "backup_on_start": false,
+        "backup_on_close": true,
+        "vacuum_on_close": true,
+        "pool_size": 5,
+        "timeout": 30
+    },
+
+    "auto_backup": {
+        "enabled": false,
+        "interval_hours": 24,
+        "max_backups": 30,
+        "dest_dir": "C:/Users/Par0056/Desktop/iMat_Backups",
+        "compression": true,
+        "filename_pattern": "aimat_backup_{timestamp}.db",
+        "backup_on_close": true
+    },
+
+    "ai": {
+        "openai_api_key": "",
+        "model": "gpt-4o-mini",
+        "api_base": "https://api.openai.com/v1",
+        "enabled": false,
+        "offline_mode": true,
+        "cache_predictions": true,
+        "cache_ttl_hours": 24,
+        "max_tokens": 2000,
+        "temperature": 0.7
+    },
+
+    "ui": {
+        "language": "en",
+        "font_size": 10,
+        "font_family": "Segoe UI",
+        "show_start_dialog": true,
+        "confirm_on_exit": true,
+        "table_rows_per_page": 100,
+        "auto_refresh_interval_seconds": 0,
+        "show_grid_lines": true,
+        "alternate_row_colors": true,
+        "enable_animations": true,
+        "date_format": "yyyy-MM-dd",
+        "time_format": "HH:mm:ss"
+    },
+
+    "barcode": {
+        "enabled": true,
+        "auto_open_on_scan": true,
+        "prefix": "",
+        "suffix": "",
+        "debounce_ms": 300,
+        "sound_enabled": true
+    },
+
+    "export": {
+        "default_format": "excel",
+        "excel_auto_open": false,
+        "pdf_page_size": "A4",
+        "pdf_orientation": "landscape",
+        "include_company_header": true,
+        "include_timestamp": true
+    },
+
+    "notifications": {
+        "low_stock_threshold": 10,
+        "expiry_warning_days": 30,
+        "expiry_critical_days": 7,
+        "preservation_alert_days": 7,
+        "show_system_tray": false,
+        "sound_alerts": false
+    },
+
+    "security": {
+        "password_min_length": 6,
+        "password_require_uppercase": false,
+        "password_require_lowercase": false,
+        "password_require_digits": false,
+        "password_require_special": false,
+        "password_expiry_days": 0,
+        "password_history_count": 3,
+        "session_timeout_minutes": 0,
+        "max_login_attempts": 5,
+        "lockout_duration_minutes": 15,
+        "lock_on_inactivity_minutes": 0
+    },
+
+    "logging": {
+        "level": "INFO",
+        "max_file_size_mb": 10,
+        "backup_count": 10,
+        "console_output": true,
+        "file_output": true,
+        "colored_console": true,
+        "audit_enabled": true,
+        "performance_logging": false
+    },
+
+    "features": {
+        "barcode_scanner": true,
+        "ai_prediction": false,
+        "abc_analysis": true,
+        "eoq_calculator": true,
+        "expiry_monitor": true,
+        "preservation": true,
+        "qc_release": true,
+        "material_request": true,
+        "excel_import": true,
+        "pdf_export": true,
+        "html_export": true,
+        "auto_backup": true,
+        "user_management": true,
+        "multi_language": false,
+        "whatsapp_sharing": true,
+        "email_sharing": true,
+        "dark_mode": true
+    },
+
+    "whatsapp": {
+        "number": "+989160684552",
+        "enabled": true,
+        "auto_include_machine_id": false
+    },
+
+    "email": {
+        "smtp_host": "smtp.gmail.com",
+        "smtp_port": 587,
+        "smtp_user": "",
+        "smtp_password": "",
+        "smtp_use_tls": true,
+        "from_address": "noreply@imat.io",
+        "reply_to": "support@imat.io",
+        "enabled": false
+    },
+
+    "support": {
+        "website": "https://www.imat.io",
+        "email": "support@imat.io",
+        "whatsapp": "+989160684552",
+        "documentation_url": "https://docs.imat.io",
+        "feedback_enabled": true
+    },
+
+    "shortcuts": {
+        "new_document": "Ctrl+D",
+        "new_item": "Ctrl+N",
+        "search": "Ctrl+F",
+        "refresh": "F5",
+        "export_excel": "Ctrl+E",
+        "export_pdf": "Ctrl+P",
+        "print": "Ctrl+Shift+P",
+        "settings": "Ctrl+,",
+        "help": "F1",
+        "barcode": "Ctrl+B",
+        "qc_release": "Ctrl+Q"
+    },
+
+    "paths": {
+        "database": "aimat.db",
+        "backups": "backups",
+        "logs": "logs",
+        "exports": "exports",
+        "templates": "templates",
+        "resources": "resources"
+    }
+}

@@ -1,0 +1,159 @@
+<RCC>
+    <!-- ================================================================== -->
+    <!-- iMat Material Control System - Resource Collection                 -->
+    <!-- ================================================================== -->
+    <!-- کامپایل با:                                                        -->
+    <!--   pyrcc5 resources.qrc -o resources_rc.py                         -->
+    <!--                                                                   -->
+    <!-- یا استفاده مستقیم در کد:                                           -->
+    <!--   import resources_rc                                              -->
+    <!-- ================================================================== -->
+
+    <!-- ================================================================== -->
+    <!-- آیکون‌های برنامه                                                   -->
+    <!-- ================================================================== -->
+    <qresource prefix="icons">
+        <!-- آیکون اصلی برنامه -->
+        <file alias="app_icon">images/logo.png</file>
+        
+        <!-- آیکون‌های منو -->
+        <file alias="menu_system">icons/menu_system.png</file>
+        <file alias="menu_material">icons/menu_material.png</file>
+        <file alias="menu_technical">icons/menu_technical.png</file>
+        <file alias="menu_quality">icons/menu_quality.png</file>
+        <file alias="menu_reports">icons/menu_reports.png</file>
+        <file alias="menu_tools">icons/menu_tools.png</file>
+        <file alias="menu_teamwork">icons/menu_teamwork.png</file>
+        <file alias="menu_help">icons/menu_help.png</file>
+        
+        <!-- آیکون‌های عملیات -->
+        <file alias="action_add">icons/action_add.png</file>
+        <file alias="action_edit">icons/action_edit.png</file>
+        <file alias="action_delete">icons/action_delete.png</file>
+        <file alias="action_refresh">icons/action_refresh.png</file>
+        <file alias="action_search">icons/action_search.png</file>
+        <file alias="action_export">icons/action_export.png</file>
+        <file alias="action_print">icons/action_print.png</file>
+        <file alias="action_save">icons/action_save.png</file>
+        <file alias="action_cancel">icons/action_cancel.png</file>
+        <file alias="action_copy">icons/action_copy.png</file>
+        
+        <!-- آیکون‌های اسناد -->
+        <file alias="doc_mrr">icons/doc_mrr.png</file>
+        <file alias="doc_miv">icons/doc_miv.png</file>
+        <file alias="doc_msr">icons/doc_msr.png</file>
+        <file alias="doc_osnd">icons/doc_osnd.png</file>
+        <file alias="doc_mtr">icons/doc_mtr.png</file>
+        
+        <!-- آیکون‌های وضعیت -->
+        <file alias="status_approved">icons/status_approved.png</file>
+        <file alias="status_rejected">icons/status_rejected.png</file>
+        <file alias="status_pending">icons/status_pending.png</file>
+        <file alias="status_quarantine">icons/status_quarantine.png</file>
+        
+        <!-- آیکون‌های QC -->
+        <file alias="qc_accept">icons/qc_accept.png</file>
+        <file alias="qc_reject">icons/qc_reject.png</file>
+        <file alias="qc_inspect">icons/qc_inspect.png</file>
+        
+        <!-- آیکون‌های ابزارها -->
+        <file alias="tool_barcode">icons/tool_barcode.png</file>
+        <file alias="tool_calculator">icons/tool_calculator.png</file>
+        <file alias="tool_chart">icons/tool_chart.png</file>
+        <file alias="tool_ai">icons/tool_ai.png</file>
+        
+        <!-- آیکون‌های ناوبری -->
+        <file alias="nav_home">icons/nav_home.png</file>
+        <file alias="nav_back">icons/nav_back.png</file>
+        <file alias="nav_forward">icons/nav_forward.png</file>
+        <file alias="nav_up">icons/nav_up.png</file>
+    </qresource>
+
+    <!-- ================================================================== -->
+    <!-- تصاویر                                                             -->
+    <!-- ================================================================== -->
+    <qresource prefix="images">
+        <!-- لوگوها -->
+        <file alias="logo_large">images/logo_large.png</file>
+        <file alias="logo_medium">images/logo_medium.png</file>
+        <file alias="logo_small">images/logo_small.png</file>
+        
+        <!-- تصاویر پس‌زمینه -->
+        <file alias="bg_login">images/bg_login.png</file>
+        <file alias="bg_splash">images/bg_splash.png</file>
+        
+        <!-- تصاویر وضعیت -->
+        <file alias="empty_state">images/empty_state.png</file>
+        <file alias="error_state">images/error_state.png</file>
+        <file alias="success_state">images/success_state.png</file>
+        
+        <!-- تصاویر راهنما -->
+        <file alias="help_barcode">images/help_barcode.png</file>
+        <file alias="help_document">images/help_document.png</file>
+        <file alias="help_qc">images/help_qc.png</file>
+    </qresource>
+
+    <!-- ================================================================== -->
+    <!-- فونت‌ها                                                            -->
+    <!-- ================================================================== -->
+    <qresource prefix="fonts">
+        <!-- فونت فارسی -->
+        <file alias="Vazirmatn-Regular">fonts/Vazirmatn-Regular.ttf</file>
+        <file alias="Vazirmatn-Bold">fonts/Vazirmatn-Bold.ttf</file>
+        <file alias="Vazirmatn-Light">fonts/Vazirmatn-Light.ttf</file>
+        
+        <!-- فونت انگلیسی -->
+        <file alias="Inter-Regular">fonts/Inter-Regular.ttf</file>
+        <file alias="Inter-Bold">fonts/Inter-Bold.ttf</file>
+        
+        <!-- فونت مونواسپیس -->
+        <file alias="Consolas">fonts/Consolas.ttf</file>
+    </qresource>
+
+    <!-- ================================================================== -->
+    <!-- استایل‌ها                                                          -->
+    <!-- ================================================================== -->
+    <qresource prefix="styles">
+        <!-- تم‌های برنامه -->
+        <file alias="theme_light">styles/theme_light.qss</file>
+        <file alias="theme_dark">styles/theme_dark.qss</file>
+        <file alias="theme_high_contrast">styles/theme_high_contrast.qss</file>
+        
+        <!-- استایل‌های کامپوننت -->
+        <file alias="table_style">styles/table_style.qss</file>
+        <file alias="button_style">styles/button_style.qss</file>
+        <file alias="input_style">styles/input_style.qss</file>
+        <file alias="dialog_style">styles/dialog_style.qss</file>
+        <file alias="menu_style">styles/menu_style.qss</file>
+        <file alias="toolbar_style">styles/toolbar_style.qss</file>
+        <file alias="statusbar_style">styles/statusbar_style.qss</file>
+    </qresource>
+
+    <!-- ================================================================== -->
+    <!-- فایل‌های راهنما                                                    -->
+    <!-- ================================================================== -->
+    <qresource prefix="help">
+        <file alias="help_en">help_en.html</file>
+        <file alias="help_fa">help_fa.html</file>
+    </qresource>
+
+    <!-- ================================================================== -->
+    <!-- صداها                                                              -->
+    <!-- ================================================================== -->
+    <qresource prefix="sounds">
+        <file alias="scan_beep">sounds/scan_beep.wav</file>
+        <file alias="notification">sounds/notification.wav</file>
+        <file alias="alert">sounds/alert.wav</file>
+        <file alias="success">sounds/success.wav</file>
+        <file alias="error">sounds/error.wav</file>
+    </qresource>
+
+    <!-- ================================================================== -->
+    <!-- ترجمه‌ها                                                           -->
+    <!-- ================================================================== -->
+    <qresource prefix="i18n">
+        <file alias="en_US">i18n/en_US.qm</file>
+        <file alias="fa_IR">i18n/fa_IR.qm</file>
+    </qresource>
+
+</RCC>

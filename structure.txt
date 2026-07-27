@@ -1,0 +1,109 @@
+iMat:
+|   .gitignore
+|   aimat.db
+|   app_config.json
+|   main.py
+|   README.md
+|   structure.txt
+|   
++---ai
+|       llm_helper.py
+|       optimizer.py
+|       predictor.py
+|       qa_engine.py
+|       __init__.py
+|       
++---backups
++---config
+|       .env
+|       app_config.json
+|       config_manager.py
+|       theme_config.json
+|       __init__.py
+|       
++---db
+|       database.py
+|       models.py
+|       __init__.py
+|       
++---iMatL
+|       license_generator.py
+|       
++---logic
+|       document_logic.py
+|       inventory.py
+|       location_logic.py
+|       material_request_logic.py
+|       product_logic.py
+|       reports.py
+|       reports_logic.py
+|       stock_logic.py
+|       __init__.py
+|       
++---logs
+|       .gitkeep
+|       
++---resources
+|   |   help_en.html
+|   |   help_fa.html
+|   |   resources.qrc
+|   |   
+|   +---icons
+|   |       .gitkeep
+|   |       
+|   +---images
+|   |       .gitkeep
+|   |       
+|   \---styles
+|           .gitkeep
+|           
++---tests
+|       conftest.py
+|       test_ai.py
+|       test_database.py
+|       test_documents.py
+|       test_inventory.py
+|       test_reports.py
+|       test_stock.py
+|       test_utils.py
+|       __init__.py
+|       
++---ui
+|       abc_analysis_dialog.py
+|       assistant_dialog.py
+|       auto_backup_dialog.py
+|       barcode_dialog.py
+|       document_dialog.py
+|       expiry_monitor_dialog.py
+|       license_dialog.py
+|       location_dialog.py
+|       login_dialog.py
+|       logo_widget.py
+|       main_window.py
+|       main_window_ui.py
+|       material_request_dialog.py
+|       material_request_history_dialog.py
+|       preservation_dialog.py
+|       product_dialog.py
+|       qc_release_dialog.py
+|       reorder_dialog.py
+|       reports_window.py
+|       report_manager.py
+|       splash_dialog.py
+|       start_dialog.py
+|       stock_view_dialog.py
+|       transaction_dialog.py
+|       user_management_dialog.py
+|       __init__.py
+|       
+\---utils
+        calculations.py
+        excel_export.py
+        html_export.py
+        license.py
+        logger.py
+        password_manager.py
+        pdf_export.py
+        trial.py
+        __init__.py
+        
