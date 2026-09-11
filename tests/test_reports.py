@@ -20,7 +20,7 @@ class TestInventorySummary:
     def test_generate_summary(self, db_session, sample_stock_accepted, 
                                sample_stock_quarantine, sample_product):
         """Test inventory summary generation."""
-        summary = generate_inventory_summary()
+        summary = generate_inventory_summary(db=db_session)
         assert len(summary) >= 1
         
         item = next((i for i in summary if i['Item Code'] == sample_product.item_code), None)
@@ -29,7 +29,7 @@ class TestInventorySummary:
 
     def test_summary_status_ok(self, db_session, sample_stock_accepted):
         """Test that items with sufficient stock show OK status."""
-        summary = generate_inventory_summary()
+        summary = generate_inventory_summary(db=db_session)
         for item in summary:
             if item['Available Qty'] > item['Min Required']:
                 assert item['Status'] == "OK"
@@ -42,13 +42,13 @@ class TestInventorySummary:
                   sample_location_warehouse.id, 3.0, qc_status="ACCEPTED")
         db_session.commit()
         
-        summary = generate_inventory_summary()
+        summary = generate_inventory_summary(db=db_session)
         low_items = [i for i in summary if i['Status'] == "LOW STOCK"]
         assert len(low_items) >= 1
 
     def test_summary_empty_database(self, db_session):
         """Test summary with empty database."""
-        summary = generate_inventory_summary()
+        summary = generate_inventory_summary(db=db_session)
         assert isinstance(summary, list)
 
 
@@ -60,7 +60,7 @@ class TestTransactionReport:
         start = date.today() - timedelta(days=1)
         end = date.today() + timedelta(days=1)
         
-        report = generate_transaction_report(start, end)
+        report = generate_transaction_report(start, end, db=db_session)
         assert len(report) >= 1
         assert report[0]['Doc No'] == "DOC001"
 
@@ -70,13 +70,13 @@ class TestTransactionReport:
         future_start = date.today() + timedelta(days=100)
         future_end = date.today() + timedelta(days=200)
         
-        report = generate_transaction_report(future_start, future_end)
+        report = generate_transaction_report(future_start, future_end, db=db_session)
         assert len(report) == 0
 
     def test_generate_transaction_report_filter_type(self, db_session, sample_transaction, 
                                                        sample_transaction2):
         """Test transaction report filtered by doc type."""
-        report = generate_transaction_report(doc_type="Receipt")
+        report = generate_transaction_report(doc_type="Receipt", db=db_session)
         assert all(r['Type'] == "Receipt" for r in report)
 
 
@@ -90,19 +90,19 @@ class TestLowStockItems:
                   sample_location_warehouse.id, 2.0, qc_status="ACCEPTED")
         db_session.commit()
         
-        low = get_low_stock_items(threshold=5)
+        low = get_low_stock_items(threshold=5, db=db_session)
         assert len(low) >= 1
         assert any(i['Item Code'] == sample_product.item_code for i in low)
 
     def test_get_low_stock_items_none(self, db_session, sample_stock_accepted):
         """Test no low stock items when stock is sufficient."""
-        low = get_low_stock_items(threshold=1)
+        low = get_low_stock_items(threshold=1, db=db_session)
         assert all(i['Available'] > 1 for i in low)
 
     def test_get_low_stock_items_custom_threshold(self, db_session, sample_stock_accepted):
         """Test low stock with custom threshold."""
         # sample_stock_accepted has 150 available
-        low = get_low_stock_items(threshold=200)
+        low = get_low_stock_items(threshold=200, db=db_session)
         assert len(low) >= 1  # 150 < 200
 
 
@@ -111,7 +111,7 @@ class TestStockValueReport:
 
     def test_get_stock_value_report(self, db_session, sample_stock_accepted, sample_product):
         """Test stock value calculation."""
-        report = get_stock_value_report()
+        report = get_stock_value_report(db=db_session)
         assert len(report) >= 1
         
         # Find the item
@@ -121,7 +121,7 @@ class TestStockValueReport:
 
     def test_get_stock_value_report_total_row(self, db_session, sample_stock_accepted):
         """Test that total row is present."""
-        report = get_stock_value_report()
+        report = get_stock_value_report(db=db_session)
         total_row = report[-1] if report else None
         if total_row and len(report) > 1:
             assert total_row['Item Code'] == 'TOTAL'
@@ -132,12 +132,12 @@ class TestMovementReport:
 
     def test_get_movement_report(self, db_session, sample_product):
         """Test movement report for a specific item."""
-        report = get_movement_report(sample_product.item_code)
+        report = get_movement_report(sample_product.item_code, db=db_session)
         assert isinstance(report, list)
 
     def test_get_movement_report_date_range(self, db_session, sample_product):
         """Test movement report with custom date range."""
         start = date.today() - timedelta(days=365)
         end = date.today()
-        report = get_movement_report(sample_product.item_code, start, end)
+        report = get_movement_report(sample_product.item_code, start, end, db=db_session)
         assert isinstance(report, list)

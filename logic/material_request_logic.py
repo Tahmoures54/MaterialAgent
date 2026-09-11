@@ -35,10 +35,35 @@ def create_material_request(
     Returns:
         Created MaterialRequest object
     """
-    # Generate request number
+    # Generate request number (per-day sequence; survives deletions)
     today_str = datetime.now().strftime("%Y%m%d")
-    count = db.query(MaterialRequest).count() + 1
-    request_no = f"MRQ-{today_str}-{count:04d}"
+    prefix = f"MRQ-{today_str}-"
+    last = (
+        db.query(MaterialRequest.request_no)
+        .filter(MaterialRequest.request_no.like(f"{prefix}%"))
+        .order_by(MaterialRequest.request_no.desc())
+        .first()
+    )
+    seq = 1
+    if last and last[0]:
+        try:
+            seq = int(str(last[0]).rsplit("-", 1)[-1]) + 1
+        except ValueError:
+            seq = 1
+    request_no = f"{prefix}{seq:04d}"
+
+    if not lines_data:
+        raise ValueError("Material request must have at least one line item")
+
+    for idx, line_data in enumerate(lines_data, start=1):
+        if not line_data.get("item_code"):
+            raise ValueError(f"Line {idx}: item code is required")
+        try:
+            qty = float(line_data.get("qty", 0))
+        except (TypeError, ValueError):
+            raise ValueError(f"Line {idx}: quantity must be a number")
+        if qty <= 0:
+            raise ValueError(f"Line {idx}: quantity must be greater than zero")
     
     # Create request header
     request = MaterialRequest(

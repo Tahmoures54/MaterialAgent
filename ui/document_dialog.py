@@ -39,7 +39,8 @@ from db.models import (
 )
 from logic.document_logic import (
     create_document, update_document_status,
-    get_document_by_no, get_documents_by_date, delete_document
+    get_document_by_no, get_documents_by_date, delete_document,
+    generate_next_doc_number,
 )
 from logic.stock_logic import add_stock, remove_stock, get_stock_by_item
 from ui.logo_widget import LogoWidget
@@ -681,20 +682,13 @@ class DocumentDialog(QDialog):
         self.subtitle.setText(f"Document Type: {code} – Flow: {flow_text}")
 
     def _generate_doc_number(self):
-        """Auto-generate document number."""
+        """Auto-generate a unique document number for the selected type and date."""
         doc_type = self.doc_type_combo.currentData()
         if not doc_type:
             return
 
-        today_str = QDate.currentDate().toString("yyyyMMdd")
-        
-        # Count existing documents of this type for today
-        count = self.db.query(Document).filter(
-            Document.doc_type == doc_type,
-            Document.doc_date == date.today()
-        ).count()
-
-        doc_no = f"{doc_type}-{today_str}-{count + 1:03d}"
+        doc_date = self.date_input.date().toPyDate() if hasattr(self, "date_input") else date.today()
+        doc_no = generate_next_doc_number(self.db, doc_type, doc_date)
         self.doc_no_input.setText(doc_no)
 
     def _add_line(self):
@@ -866,6 +860,9 @@ class DocumentDialog(QDialog):
             return False, "Please select a document type."
 
         doc_no = self.doc_no_input.text().strip()
+        if not doc_no:
+            self._generate_doc_number()
+            doc_no = self.doc_no_input.text().strip()
         if not doc_no:
             return False, "Document number is required."
 
@@ -1342,7 +1339,9 @@ class DocumentDialog(QDialog):
 
         reply = QMessageBox.question(
             self, "Confirm Delete",
-            f"Delete document '{doc_no}'?\n\nThis action cannot be undone.",
+            f"Delete document '{doc_no}'?\n\n"
+            "Stock movements posted by this draft will be reversed.\n"
+            "This action cannot be undone.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )

@@ -84,22 +84,21 @@ class InventoryOptimizer:
         Returns:
             Safety stock quantity.
         """
-        # z-score for common service levels
         z_map = {
             0.90: 1.28,
             0.95: 1.645,
             0.99: 2.33,
         }
-        # approximate z-score if exact level not in map
-        z = z_map.get(round(service_level, 2), 1.645)
-        if service_level > 0.99:
-            z = 2.33
-        elif service_level > 0.95:
-            z = 1.645
-        elif service_level > 0.90:
-            z = 1.28
-        else:
-            z = 0.84  # 80%
+        z = z_map.get(round(service_level, 2))
+        if z is None:
+            if service_level >= 0.99:
+                z = 2.33
+            elif service_level >= 0.95:
+                z = 1.645
+            elif service_level >= 0.90:
+                z = 1.28
+            else:
+                z = 0.84  # ~80%
         return z * demand_std_dev * math.sqrt(lead_time_days)
 
     @staticmethod
@@ -146,10 +145,10 @@ class InventoryOptimizer:
         total_value = sum(v for _, v in sorted_items)
         cumulative = 0.0
         classification = {}
-        for item, val in sorted_items:
+        for index, (item, val) in enumerate(sorted_items):
             cumulative += val
             cum_ratio = cumulative / total_value if total_value > 0 else 0
-            if cum_ratio <= a_percent:
+            if index == 0 or cum_ratio <= a_percent:
                 classification[item] = 'A'
             elif cum_ratio <= b_percent:
                 classification[item] = 'B'

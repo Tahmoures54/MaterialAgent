@@ -38,6 +38,19 @@ def create_location(
     Raises:
         ValueError: If location code already exists or parent not found
     """
+    VALID_TYPES = {"WAREHOUSE", "OPEN_YARD", "RACK", "BIN", "QUARANTINE"}
+    loc_type = (loc_type or "").upper().strip()
+    if loc_type not in VALID_TYPES:
+        raise ValueError(
+            f"Invalid location type '{loc_type}'. Allowed: {', '.join(sorted(VALID_TYPES))}"
+        )
+    code = (code or "").strip()
+    if not code:
+        raise ValueError("Location code is required")
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("Location name is required")
+
     existing = db.query(Location).filter(Location.code == code).first()
     if existing:
         raise ValueError(f"A location with code '{code}' already exists.")

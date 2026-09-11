@@ -182,9 +182,8 @@ class TestInventoryOptimizer:
             demand_std_dev=5,
             lead_time_days=7
         )
-        # z=1.645 for 95%, sqrt(7) ≈ 2.646
-        # ss = 1.645 * 5 * 2.646 ≈ 21.75
-        assert round(ss, 2) == 21.75
+        # z=1.645 for 95%, sqrt(7) ≈ 2.64575 → 1.645 * 5 * 2.64575 ≈ 21.76
+        assert ss == pytest.approx(21.76, abs=0.02)
 
     def test_safety_stock_service_level_99(self):
         """Test safety stock for 99% service level."""
@@ -193,8 +192,8 @@ class TestInventoryOptimizer:
             demand_std_dev=5,
             lead_time_days=7
         )
-        # z=2.33 for 99%
-        assert round(ss, 2) == 30.81
+        # z=2.33 for 99%, sqrt(7) ≈ 2.64575 → 2.33 * 5 * 2.64575 ≈ 30.82
+        assert ss == pytest.approx(30.82, abs=0.02)
 
     def test_reorder_point(self):
         """Test reorder point calculation."""
@@ -252,10 +251,9 @@ class TestInventoryOptimizer:
             ("ITEM-D", 500)
         ]
         classes = InventoryOptimizer.abc_classification(items, a_percent=0.7, b_percent=0.9)
-        
-        assert classes["ITEM-A"] == 'A'  # 50% → A
-        assert classes["ITEM-B"] == 'A'  # 80% → A (70-90 is B? No, 50%+30%=80% <= 70%? No, 80% > 70%)
-        # Let me recalculate: total=10000, ITEM-A:5000(50%)≤70%→A, ITEM-B:8000(80%)>70%→B, ITEM-C:9500(95%)>90%→C, ITEM-D:10000(100%)>90%→C
+
+        # 50% ≤ 70% → A; 80% → B; 95%/100% → C. Highest-value item is always A.
+        assert classes["ITEM-A"] == 'A'
         assert classes["ITEM-B"] == 'B'
         assert classes["ITEM-C"] == 'C'
         assert classes["ITEM-D"] == 'C'

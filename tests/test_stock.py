@@ -9,7 +9,7 @@ from datetime import date, timedelta
 from logic.stock_logic import (
     add_stock, remove_stock, move_stock, change_qc_status,
     get_stock_record, get_stock_by_item, get_stock_by_location,
-    get_stock_summary
+    get_stock_summary, allocate_stock, deallocate_stock
 )
 from db.models import Stock
 
@@ -364,40 +364,38 @@ class TestStockEdgeCases:
     """Test stock edge cases and boundary conditions."""
 
     def test_add_zero_quantity(self, db_session, sample_product, sample_location_warehouse):
-        """Test adding zero quantity stock."""
-        stock = add_stock(
-            db=db_session,
-            item_code=sample_product.item_code,
-            heat_no="HEAT-ZERO",
-            location_id=sample_location_warehouse.id,
-            qty=0.0
-        )
-        db_session.commit()
-        assert stock.quantity == 0.0
+        """Test adding zero quantity is rejected."""
+        with pytest.raises(ValueError, match="greater than zero"):
+            add_stock(
+                db=db_session,
+                item_code=sample_product.item_code,
+                heat_no="HEAT-ZERO",
+                location_id=sample_location_warehouse.id,
+                qty=0.0
+            )
 
     def test_remove_zero_quantity(self, db_session, sample_stock_accepted):
-        """Test removing zero quantity."""
-        stock = remove_stock(
-            db=db_session,
-            item_code=sample_stock_accepted.item_code,
-            heat_no=sample_stock_accepted.heat_no,
-            location_id=sample_stock_accepted.location_id,
-            qty=0.0,
-            qc_status="ACCEPTED"
-        )
-        assert stock.quantity == sample_stock_accepted.quantity  # Unchanged
+        """Test removing zero quantity is rejected."""
+        with pytest.raises(ValueError, match="greater than zero"):
+            remove_stock(
+                db=db_session,
+                item_code=sample_stock_accepted.item_code,
+                heat_no=sample_stock_accepted.heat_no,
+                location_id=sample_stock_accepted.location_id,
+                qty=0.0,
+                qc_status="ACCEPTED"
+            )
 
     def test_add_negative_quantity(self, db_session, sample_product, sample_location_warehouse):
-        """Test that negative quantity is handled (should be allowed by DB but may need validation)."""
-        stock = add_stock(
-            db=db_session,
-            item_code=sample_product.item_code,
-            heat_no="HEAT-NEG",
-            location_id=sample_location_warehouse.id,
-            qty=-10.0
-        )
-        db_session.commit()
-        assert stock.quantity == -10.0  # Allowed at DB level; validation should be in UI
+        """Test that negative quantity is rejected at the logic layer."""
+        with pytest.raises(ValueError, match="greater than zero"):
+            add_stock(
+                db=db_session,
+                item_code=sample_product.item_code,
+                heat_no="HEAT-NEG",
+                location_id=sample_location_warehouse.id,
+                qty=-10.0
+            )
 
     def test_stock_available_property(self, db_session, sample_stock_accepted):
         """Test the available_qty hybrid property."""
@@ -460,3 +458,49 @@ class TestStockEdgeCases:
         with pytest.raises(IntegrityError):
             db_session.commit()
         db_session.rollback()
+
+
+class TestStockAllocation:
+    """Test stock reservation / allocation."""
+
+    def test_allocate_and_deallocate(self, db_session, sample_stock_accepted):
+        original_alloc = sample_stock_accepted.allocated_qty
+        stock = allocate_stock(
+            db_session,
+            sample_stock_accepted.item_code,
+            sample_stock_accepted.heat_no,
+            sample_stock_accepted.location_id,
+            20.0,
+        )
+        assert stock.allocated_qty == original_alloc + 20.0
+        assert stock.available_qty == sample_stock_accepted.quantity - stock.allocated_qty
+
+        stock = deallocate_stock(
+            db_session,
+            sample_stock_accepted.item_code,
+            sample_stock_accepted.heat_no,
+            sample_stock_accepted.location_id,
+            20.0,
+        )
+        assert stock.allocated_qty == original_alloc
+
+    def test_allocate_more_than_available(self, db_session, sample_stock_accepted):
+        with pytest.raises(ValueError, match="Insufficient available stock"):
+            allocate_stock(
+                db_session,
+                sample_stock_accepted.item_code,
+                sample_stock_accepted.heat_no,
+                sample_stock_accepted.location_id,
+                999.0,
+            )
+
+    def test_invalid_qc_status(self, db_session, sample_product, sample_location_warehouse):
+        with pytest.raises(ValueError, match="Invalid QC status"):
+            add_stock(
+                db_session,
+                sample_product.item_code,
+                "HEAT-BAD-QC",
+                sample_location_warehouse.id,
+                10.0,
+                qc_status="MAYBE",
+            )

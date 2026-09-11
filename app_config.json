@@ -23,7 +23,7 @@
         "enabled": false,
         "interval_hours": 24,
         "max_backups": 30,
-        "dest_dir": "C:/Users/Par0056/Desktop/iMat_Backups",
+        "dest_dir": "backups",
         "compression": true,
         "filename_pattern": "aimat_backup_{timestamp}.db",
         "backup_on_close": true
