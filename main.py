@@ -27,278 +27,194 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import Qt, QTimer, QSharedMemory
 from PyQt6.QtGui import QIcon, QFont
 
-# ==================================================================
-# Imports from project modules
-# ==================================================================
-
 from db.database import init_db, SessionLocal, get_database_info, backup_database
 from db.models import User, ProjectInfo
 from ui.splash_dialog import SplashDialog, SimpleSplashDialog
 from ui.login_dialog import LoginDialog
 from ui.main_window import MainWindow
+
+
+def _install_settings_dialog():
+    """Wire System → Settings to the database engine dialog (admin only)."""
+    from utils.logger import setup_logger
+    _log = setup_logger("iMat.settings")
+
+    def on_settings(self, checked: bool = False):
+        if getattr(self, "user_role", "") != "admin":
+            QMessageBox.warning(
+                self, "Access Denied",
+                "Only administrators can modify settings."
+            )
+            return
+        try:
+            from ui.database_settings_dialog import DatabaseSettingsDialog
+            DatabaseSettingsDialog(self).exec()
+        except Exception as e:
+            _log.error(f"Settings dialog failed: {e}")
+            QMessageBox.critical(
+                self, "Settings Error",
+                f"Could not open settings:\n{e}"
+            )
+
+    MainWindow.on_settings = on_settings
+
+
+_install_settings_dialog()
+
 from utils.logger import setup_logger, log_error, log_info, log_warning
 from utils.license import is_license_valid, load_license, get_machine_id
 from utils.trial import get_trial_status, is_trial_activated, activate_trial
 
-# ==================================================================
-# Constants
-# ==================================================================
-
 APP_NAME = "iMat Warehouse"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.3.0"
+# Keep main window title version in sync
+try:
+    import ui.main_window as _mw
+    _mw.APP_VERSION = APP_VERSION
+except Exception:
+    pass
 APP_EDITION = "EPC Edition"
 ORGANIZATION_NAME = "iMat International"
 ORGANIZATION_DOMAIN = "imat.io"
 
-# Database path
 DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "aimat.db"))
-
-# Single instance key
 SINGLE_INSTANCE_KEY = "iMatWarehouseEPC_SingleInstance"
-
-# Keep QSharedMemory alive for the process lifetime. A local variable is
-# garbage-collected when check_single_instance() returns, which silently
-# disables the single-instance guard.
 _single_instance_memory = None
-
-# Setup logger
 logger = setup_logger("iMat")
 
 
-# ==================================================================
-# Exception Handler
-# ==================================================================
-
 def setup_exception_handler():
-    """Setup global exception handler for unhandled exceptions."""
     def exception_hook(exc_type, exc_value, exc_traceback):
-        """Global exception handler."""
-        # Log the error
         error_msg = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
         logger.critical(f"Unhandled exception:\n{error_msg}")
-        
-        # Write to crash log
         crash_log_dir = os.path.join(os.path.dirname(__file__), "logs")
         os.makedirs(crash_log_dir, exist_ok=True)
         crash_log_path = os.path.join(
             crash_log_dir,
             f"crash_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         )
-        
         try:
             with open(crash_log_path, 'w', encoding='utf-8') as f:
-                f.write(f"iMat Crash Report\n")
-                f.write(f"Version: {APP_VERSION}\n")
-                f.write(f"Time: {datetime.now()}\n")
-                f.write(f"Machine ID: {get_machine_id()}\n")
-                f.write(f"{'='*60}\n\n")
-                f.write(error_msg)
+                f.write(f"iMat Crash Report\nVersion: {APP_VERSION}\nTime: {datetime.now()}\n")
+                f.write(f"Machine ID: {get_machine_id()}\n{'='*60}\n\n{error_msg}")
         except Exception:
             pass
-        
-        # Show error dialog
         QMessageBox.critical(
-            None,
-            "Application Error",
+            None, "Application Error",
             f"An unexpected error occurred:\n\n{str(exc_value)}\n\n"
             f"A crash report has been saved to:\n{crash_log_path}\n\n"
             f"Please contact support@imat.io for assistance."
         )
-        
         sys.exit(1)
-    
     sys.excepthook = exception_hook
 
 
-# ==================================================================
-# Single Instance Check
-# ==================================================================
-
 def check_single_instance() -> bool:
-    """
-    Check if another instance is already running.
-
-    Returns:
-        True if this is the only instance
-    """
     global _single_instance_memory
     _single_instance_memory = QSharedMemory(SINGLE_INSTANCE_KEY)
-
     if _single_instance_memory.attach():
         QMessageBox.warning(
-            None,
-            "Already Running",
+            None, "Already Running",
             f"{APP_NAME} is already running.\n\n"
             "Please check your taskbar or system tray for the running instance."
         )
         return False
-
     if not _single_instance_memory.create(1):
         logger.warning("Failed to create shared memory for single instance check")
-
     return True
 
 
-# ==================================================================
-# Application Setup
-# ==================================================================
-
 def setup_application() -> QApplication:
-    """
-    Setup the Qt application with proper settings.
-    
-    Returns:
-        Configured QApplication instance
-    """
-    # Enable High DPI support
     if hasattr(Qt, 'AA_EnableHighDpiScaling'):
         QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
         QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-    
-    # Create application
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     app.setOrganizationName(ORGANIZATION_NAME)
     app.setOrganizationDomain(ORGANIZATION_DOMAIN)
     app.setApplicationVersion(APP_VERSION)
-    
-    # Set application icon
     icon_path = os.path.join(os.path.dirname(__file__), "resources", "images", "logo.png")
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))
-    
-    # Set default font
-    font = QFont("Segoe UI", 10)
-    app.setFont(font)
-    
-    # Apply stylesheet
+    app.setFont(QFont("Segoe UI", 10))
     app.setStyleSheet("""
         QToolTip {
-            background-color: #004D40;
-            color: white;
-            border: 1px solid #00695C;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
+            background-color: #004D40; color: white;
+            border: 1px solid #00695C; padding: 4px 8px;
+            border-radius: 4px; font-size: 11px;
         }
     """)
-    
     return app
 
 
-# ==================================================================
-# Database Initialization
-# ==================================================================
-
 def initialize_database(splash: SplashDialog) -> bool:
-    """
-    Initialize database with progress updates.
-    
-    Args:
-        splash: Splash screen for progress updates
-    
-    Returns:
-        True if initialization successful
-    """
     try:
         splash.set_message("Initializing database...")
         splash.set_progress(20)
-        
-        # Initialize database
         init_db()
-        
         splash.set_message("Database initialized")
         splash.set_progress(40)
-        
-        # Create default project info if needed
         session = SessionLocal()
         try:
             if session.query(ProjectInfo).count() == 0:
-                default_project = ProjectInfo(
+                session.add(ProjectInfo(
                     company_name="FARASAKOU",
                     project_name="Storage Development",
                     project_code="001"
-                )
-                session.add(default_project)
+                ))
                 session.commit()
                 logger.info("Default project info created")
         finally:
             session.close()
-        
         logger.info("Database initialized successfully")
-        
-        # Get database info
         db_info = get_database_info()
-        logger.info(f"Database: {db_info.get('url', 'Unknown')} | "
-                   f"Tables: {len(db_info.get('tables', []))} | "
-                   f"Size: {db_info.get('size_mb', 0)} MB")
-        
+        logger.info(
+            f"Database: {db_info.get('url', 'Unknown')} | "
+            f"Tables: {len(db_info.get('tables', []))} | "
+            f"Size: {db_info.get('size_mb', 0)} MB"
+        )
         return True
-        
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         splash.close()
         QMessageBox.critical(
-            None,
-            "Database Error",
+            None, "Database Error",
             f"Failed to initialize database:\n\n{str(e)}\n\n"
             "Please check:\n"
             "• Database file permissions\n"
             "• Disk space availability\n"
-            "• Database file integrity"
+            "• Database file integrity / SQL Server connectivity"
         )
         return False
 
 
-# ==================================================================
-# License Check
-# ==================================================================
-
 def check_license(splash: SplashDialog) -> dict:
-    """
-    Check license status.
-    
-    Args:
-        splash: Splash screen for progress updates
-    
-    Returns:
-        License status dictionary
-    """
     splash.set_message("Checking license...")
     splash.set_progress(50)
-    
     license_info = {
         "has_license": False,
         "has_trial": False,
         "trial_active": False,
         "message": "",
     }
-    
-    # Check full license
     if is_license_valid():
         license_info["has_license"] = True
         license_info["message"] = "Full license active"
         logger.info("Full license validated")
         return license_info
-    
-    # Check trial
     try:
         session = SessionLocal()
         trial_status = get_trial_status(session)
         session.close()
-        
         if trial_status['active']:
             license_info["has_trial"] = True
             license_info["trial_active"] = True
             license_info["message"] = (
                 f"Trial active - {trial_status['days_left']} days remaining"
             )
-            
-            # Activate trial if not already
             if not is_trial_activated():
                 activate_trial()
-                
             logger.info(f"Trial active: {trial_status['days_left']} days remaining")
         elif trial_status.get('in_grace_period'):
             license_info["has_trial"] = True
@@ -311,134 +227,71 @@ def check_license(splash: SplashDialog) -> dict:
     except Exception as e:
         logger.error(f"Trial check failed: {e}")
         license_info["message"] = "Demo mode (limited)"
-    
     return license_info
 
 
-# ==================================================================
-# Authentication
-# ==================================================================
-
 def authenticate_user(splash: SplashDialog) -> tuple:
-    """
-    Show login dialog and authenticate user.
-    
-    Args:
-        splash: Splash screen
-    
-    Returns:
-        Tuple of (username, role) or (None, None) if cancelled
-    """
     splash.set_message("Waiting for login...")
     splash.set_progress(80)
-    
-    # Close splash before showing login
     splash.close()
-    
-    # Show login dialog
     login = LoginDialog()
-    
     if login.exec() != LoginDialog.DialogCode.Accepted:
         logger.info("User cancelled login")
         return None, None
-    
     username = login.current_user
     role = login.user_role
-    
     logger.info(f"User logged in: {username} (Role: {role})")
-    
     return username, role
 
 
-# ==================================================================
-# Main Entry Point
-# ==================================================================
-
 def main():
-    """Main application entry point."""
-    
-    # Check single instance
     if not check_single_instance():
         return 1
-    
-    # Setup exception handler
     setup_exception_handler()
-    
-    # Setup application
     app = setup_application()
-    
-    # Show splash screen
     splash = SplashDialog()
     splash.set_message("Starting iMat Warehouse...")
     splash.set_progress(5)
     splash.show()
     app.processEvents()
-    
-    # Initialize database
     if not initialize_database(splash):
         return 1
-    
-    # Check license
-    license_info = check_license(splash)
+    check_license(splash)
     splash.set_progress(60)
-    
-    # Wait for splash animation
     splash.set_message("Ready to start...")
     splash.set_progress(100)
-    
-    # Use exec() to wait for animation
     if splash.exec() != SplashDialog.DialogCode.Accepted:
-        # Splash was skipped or closed
         pass
-    
-    # Authenticate user
     username, role = authenticate_user(splash)
-    
     if not username:
         logger.info("Application closed - no user logged in")
         return 0
-    
-    # Create and show main window
     try:
         window = MainWindow(user_role=role, username=username)
         window.show()
-        
         logger.info(f"Main window opened for user: {username}")
-        
-        # Run application event loop
         exit_code = app.exec()
-        
         logger.info(f"Application closed with exit code: {exit_code}")
         return exit_code
-        
     except Exception as e:
         logger.critical(f"Failed to create main window: {e}", exc_info=True)
         QMessageBox.critical(
-            None,
-            "Fatal Error",
+            None, "Fatal Error",
             f"Failed to start the application:\n\n{str(e)}\n\n"
             "Please contact support@imat.io for assistance."
         )
         return 1
 
 
-# ==================================================================
-# Script Entry Point
-# ==================================================================
-
 if __name__ == "__main__":
-    # Print startup banner
     print(f"\n{'='*60}")
     print(f"  {APP_NAME} v{APP_VERSION} - {APP_EDITION}")
     print(f"  {ORGANIZATION_NAME}")
     print(f"  www.imat.io")
     print(f"  Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"{'='*60}\n")
-    
-    # Start application
     try:
-        exit_code = main()
-        sys.exit(exit_code)
+        sys.exit(main())
     except KeyboardInterrupt:
         print("\nApplication interrupted by user.")
         sys.exit(0)
