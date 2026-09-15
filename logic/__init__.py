@@ -67,6 +67,7 @@ from .material_request_logic import (
     update_material_request_status,
     get_material_requests,
     get_material_request_by_no,
+    record_issue_fulfillment,
 )
 
 __all__ = [
@@ -123,4 +124,5 @@ __all__ = [
     'update_material_request_status',
     'get_material_requests',
     'get_material_request_by_no',
+    'record_issue_fulfillment',
 ]
