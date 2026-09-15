@@ -1,1 +1,48 @@
-PLACEHOLDER2
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>iMat User Manual</title>
+    <style>body{font-family:system-ui,sans-serif;padding:20px;line-height:1.7}h1,h2{color:#004D40}section{margin:24px 0;padding:16px;background:#f9f9f9;border-radius:8px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#004D40;color:#fff}code{background:#e8f5e9;padding:2px 6px}</style>
+</head>
+<body>
+<h1>iMat Warehouse User Manual</h1>
+<p>Material Control System for EPC Projects — Version 2.2</p>
+
+<section id="welcome">
+<h2>Welcome</h2>
+<p>iMat is built with <strong>PyQt6</strong> and defaults to <strong>SQLite</strong>. From version 2.2 you can also connect to <strong>SQL Server</strong> for multi-user network use.</p>
+</section>
+
+<section id="database">
+<h2>Database: SQLite or SQL Server</h2>
+<table>
+<tr><th>Mode</th><th>Best for</th></tr>
+<tr><td>SQLite (default)</td><td>Single-user, offline</td></tr>
+<tr><td>SQL Server</td><td>Multi-user on a network</td></tr>
+</table>
+<h3>Enabling SQL Server</h3>
+<ol>
+<li>Install Microsoft ODBC Driver 17/18</li>
+<li><code>pip install pyodbc</code></li>
+<li>In <code>app_config.json</code>: set <code>database.engine = "sqlserver"</code> and fill the sqlserver section</li>
+</ol>
+<p><strong>Note:</strong> File-based backup is SQLite-only.</p>
+</section>
+
+<section id="ai">
+<h2>AI Features</h2>
+<ul>
+<li>Demand prediction with ensemble and intermittent methods</li>
+<li>EOQ, Safety Stock, ABC analysis</li>
+<li>Offline Q&amp;A assistant (English / Persian)</li>
+</ul>
+</section>
+
+<section id="support">
+<h2>Support</h2>
+<p>WhatsApp: +98 916 068 4552 · <a href="https://www.imat.io">www.imat.io</a></p>
+<p>The previous full-styled help is available in git history and will be restored with full layout shortly.</p>
+</section>
+</body>
+</html>

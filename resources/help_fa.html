@@ -1,11 +1,48 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>راهنمای iMat</title>
+    <meta charset="UTF-8">
+    <title>راهنمای کاربری iMat</title>
+    <style>body{font-family:Tahoma,sans-serif;direction:rtl;padding:20px;line-height:1.8}h1,h2{color:#004D40}section{margin:24px 0;padding:16px;background:#f9f9f9;border-radius:8px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:right}th{background:#004D40;color:#fff}code{background:#e8f5e9;padding:2px 6px}</style>
 </head>
 <body>
-<p>در حال بازیابی فایل راهنما... لطفاً یک لحظه صبر کنید یا از commit قبلی بازگردانی کنید.</p>
-<p>محتوای کامل در حال آپلود است.</p>
+<h1>راهنمای کاربری iMat Warehouse</h1>
+<p>سیستم کنترل مواد برای پروژه‌های EPC — نسخه ۲.۲</p>
+
+<section id="welcome">
+<h2>خوش آمدید</h2>
+<p>iMat با <strong>PyQt6</strong> ساخته شده و به‌صورت پیش‌فرض روی <strong>SQLite</strong> کار می‌کند. از نسخه ۲.۲ امکان اتصال به <strong>SQL Server</strong> برای کار تحت شبکه فراهم است.</p>
+</section>
+
+<section id="database">
+<h2>انتخاب دیتابیس: SQLite یا SQL Server</h2>
+<table>
+<tr><th>حالت</th><th>مناسب برای</th></tr>
+<tr><td>SQLite (پیش‌فرض)</td><td>تک‌کاربره، آفلاین</td></tr>
+<tr><td>SQL Server</td><td>چندکاربره تحت شبکه</td></tr>
+</table>
+<h3>فعال‌سازی SQL Server</h3>
+<ol>
+<li>نصب ODBC Driver 17/18 مایکروسافت</li>
+<li><code>pip install pyodbc</code></li>
+<li>در <code>app_config.json</code>: <code>database.engine = "sqlserver"</code> و پر کردن بخش sqlserver</li>
+</ol>
+<p><strong>توجه:</strong> بک‌آپ فایل‌بیس فقط در حالت SQLite است.</p>
+</section>
+
+<section id="ai">
+<h2>قابلیت‌های هوشمند</h2>
+<ul>
+<li>پیش‌بینی تقاضا با Ensemble و روش تقاضای پراکنده</li>
+<li>EOQ، Safety Stock، ABC</li>
+<li>دستیار پرسش‌وپاسخ آفلاین (فارسی/انگلیسی)</li>
+</ul>
+</section>
+
+<section id="support">
+<h2>پشتیبانی</h2>
+<p>واتساپ: +98 916 068 4552 · <a href="https://www.imat.io">www.imat.io</a></p>
+<p>راهنمای کامل‌تر قبلی در تاریخچه گیت (commit قبل از ادغام) موجود است و به‌زودی نسخه کامل با ظاهر قبلی بازگردانده می‌شود.</p>
+</section>
 </body>
 </html>
