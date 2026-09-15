@@ -88,6 +88,7 @@ class TestDemandPredictor:
         assert "predicted_daily" in result
         assert "confidence_interval" in result
         assert result["confidence_level"] == "95%"
+        assert "method_used" in result
 
     def test_best_method_selection(self):
         """Test automatic best method selection."""
@@ -95,7 +96,7 @@ class TestDemandPredictor:
         data = list(range(1, 50))  # 1, 2, 3, ..., 49
         predictor = DemandPredictor(data)
         best = predictor.best_method(forecast_horizon=7)
-        assert best in ["ma7", "wma7", "exp", "lin_reg", "season7"]
+        assert best in ["ma7", "wma7", "exp", "lin_reg", "season7", "intermittent"]
 
     def test_holt_winters_insufficient_data(self):
         """Test Holt-Winters falls back to exponential smoothing with limited data."""
@@ -119,7 +120,42 @@ class TestDemandPredictor:
         
         assert "ma7" in errors
         assert "exp" in errors
+        assert "intermittent" in errors
         assert all(v >= 0 for v in errors.values())
+
+    def test_intermittent_demand(self):
+        """Test intermittent (sparse) demand forecast."""
+        # Mostly zeros with occasional demand
+        data = [0, 0, 10, 0, 0, 0, 15, 0, 0, 0, 0, 12]
+        predictor = DemandPredictor(data)
+        forecast = predictor.intermittent_demand()
+        assert forecast > 0
+        assert forecast < 10  # Should be diluted by the zeros
+
+    def test_ensemble_forecast(self):
+        """Test ensemble of top methods."""
+        data = list(range(1, 30))
+        predictor = DemandPredictor(data)
+        ens = predictor.ensemble_forecast(days=7, top_n=3)
+        assert ens > 0
+
+    def test_demand_profile(self):
+        """Test demand profile diagnostics."""
+        data = [0, 0, 5, 0, 0, 8, 0, 0, 0, 12]
+        predictor = DemandPredictor(data)
+        profile = predictor.demand_profile()
+        assert profile["total_days"] == 10
+        assert profile["non_zero_days"] == 3
+        assert profile["is_intermittent"] is True
+        assert profile["avg_when_demand"] > 0
+
+    def test_demand_profile_regular(self):
+        """Test demand profile for regular demand."""
+        data = [5, 6, 7, 8, 9, 10]
+        predictor = DemandPredictor(data)
+        profile = predictor.demand_profile()
+        assert profile["is_intermittent"] is False
+        assert profile["zero_ratio"] == 0.0
 
 
 class TestInventoryOptimizer:
