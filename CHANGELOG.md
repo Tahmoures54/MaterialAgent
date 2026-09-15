@@ -12,6 +12,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Deeper AI forecasting validation
 - Full Persian UI strings
 
+## [2.1.0] - 2026-09-15
+
+### Added (AI)
+- **Ensemble forecasting**: averages the top-N best methods for more robust predictions
+- **Intermittent demand** method (Croston-inspired) for sparse / many-zero series
+- `demand_profile()` diagnostic (zero ratio, intermittency flag, average when demand occurs)
+- `method_used` field in prediction results for transparency
+
+### Improved
+- Automatic method selection now includes the new intermittent model
+- Better handling of sparse demand data in `predict_demand(method="auto")`
+
+### Tests
+- New unit tests covering ensemble, intermittent demand and demand profile
+
 ## [2.0.0] - 2026-09-15
 
 ### Added
