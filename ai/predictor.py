@@ -6,7 +6,9 @@ Provides:
 - Multiple forecasting methods (moving average, exponential smoothing,
   linear regression, Holt‑Winters, seasonal naive)
 - Automatic model selection based on historical accuracy
+- Simple ensemble (average of top methods)
 - Confidence intervals and demand variability
+- Better handling of sparse / intermittent demand
 - Batch prediction for many items
 - Cached database integration for performance
 """
@@ -29,7 +31,7 @@ class DemandPredictor:
         """
         Initialize with a list of daily demand values in chronological order.
         """
-        self.data = historical_data if historical_data else []
+        self.data = [float(x) for x in historical_data] if historical_data else []
 
     # ------------------------------------------------------------------
     # Basic forecasting methods
@@ -58,7 +60,7 @@ class DemandPredictor:
         forecast = self.data[0]
         for actual in self.data[1:]:
             forecast = alpha * actual + (1 - alpha) * forecast
-        return forecast
+        return float(forecast)
 
     def linear_regression_forecast(self, steps: int = 7) -> float:
         """
@@ -82,7 +84,7 @@ class DemandPredictor:
         # average daily demand over next 'steps' days
         future_x = n + steps - 1
         forecast_total = a + b * future_x
-        return max(0.0, forecast_total / steps)
+        return max(0.0, float(forecast_total / steps))
 
     def seasonal_naive(self, seasonal_period: int = 7) -> float:
         """Repeat the average of the last complete seasonal period."""
@@ -112,19 +114,52 @@ class DemandPredictor:
         seasonals = [series[i + seasonal_period] - series[i] for i in range(seasonal_period)]
         level = series[seasonal_period - 1]
         trend = (series[seasonal_period - 1] - series[0]) / seasonal_period
-        forecasts = []
 
         for i in range(seasonal_period, len(series)):
             last_level = level
             level = alpha * (series[i] - seasonals[i - seasonal_period]) + (1 - alpha) * (last_level + trend)
             trend = beta * (level - last_level) + (1 - beta) * trend
             seasonals.append(gamma * (series[i] - level) + (1 - gamma) * seasonals[i - seasonal_period])
-            forecasts.append(level + trend + seasonals[i - seasonal_period])
 
         # Forecast for next period
-        next_level = level + trend  # no actual observation
-        next_season = seasonals[-seasonal_period] if len(seasonals) >= seasonal_period else 0
-        return next_level + next_season
+        next_level = level + trend
+        next_season = seasonals[-seasonal_period] if len(seasonals) >= seasonal_period else 0.0
+        return float(next_level + next_season)
+
+    # ------------------------------------------------------------------
+    # New: Croston-like simple method for intermittent demand
+    # ------------------------------------------------------------------
+    def intermittent_demand(self) -> float:
+        """
+        Simple Croston-inspired forecast for sparse / intermittent demand.
+        Useful when many days have zero demand.
+        """
+        if not self.data:
+            return 0.0
+
+        non_zero = [x for x in self.data if x > 0]
+        if not non_zero:
+            return 0.0
+
+        # Average demand size when demand occurs
+        avg_size = float(np.mean(non_zero))
+
+        # Average interval between non-zero demands
+        intervals = []
+        last_idx = -1
+        for i, val in enumerate(self.data):
+            if val > 0:
+                if last_idx >= 0:
+                    intervals.append(i - last_idx)
+                last_idx = i
+
+        if not intervals:
+            # Only one demand event in the whole history
+            return avg_size / max(len(self.data), 1)
+
+        avg_interval = float(np.mean(intervals))
+        # Expected daily demand = size / interval
+        return avg_size / max(avg_interval, 1.0)
 
     # ------------------------------------------------------------------
     # Model evaluation
@@ -140,6 +175,7 @@ class DemandPredictor:
             "exp": lambda: self.exponential_smoothing(0.3),
             "lin_reg": lambda: self.linear_regression_forecast(forecast_horizon),
             "season7": lambda: self.seasonal_naive(7),
+            "intermittent": lambda: self.intermittent_demand(),
         }
 
         # We need at least 2*forecast_horizon points for testing
@@ -153,7 +189,7 @@ class DemandPredictor:
         errors = {}
         for name, method_func in methods.items():
             self.data = train_data
-            pred_daily = method_func()   # this is average daily demand
+            pred_daily = method_func()
             actual_daily = float(np.mean(test_data))
             errors[name] = abs(pred_daily - actual_daily)
 
@@ -166,6 +202,40 @@ class DemandPredictor:
         if not errors:
             return "exp"
         return min(errors, key=errors.get)
+
+    def ensemble_forecast(self, days: int = 7, top_n: int = 3) -> float:
+        """
+        Average the predictions of the top_n best methods (by backtest MAE).
+        More robust than a single model, especially with noisy data.
+        """
+        if not self.data:
+            return 0.0
+
+        errors = self.evaluate_models(forecast_horizon=min(days, max(len(self.data)//2, 3)))
+        if not errors:
+            return self.moving_average()
+
+        # Sort methods by ascending error
+        ranked = sorted(errors.items(), key=lambda x: x[1])
+        top_methods = [name for name, _ in ranked[:top_n]]
+
+        method_map = {
+            "ma7": lambda: self.moving_average(7),
+            "wma7": lambda: self.weighted_moving_average(7),
+            "exp": lambda: self.exponential_smoothing(0.3),
+            "lin_reg": lambda: self.linear_regression_forecast(days),
+            "season7": lambda: self.seasonal_naive(7),
+            "intermittent": lambda: self.intermittent_demand(),
+        }
+
+        preds = []
+        for name in top_methods:
+            if name in method_map:
+                preds.append(method_map[name]())
+
+        if not preds:
+            return self.moving_average()
+        return float(np.mean(preds))
 
     # ------------------------------------------------------------------
     # Unified prediction
@@ -183,25 +253,18 @@ class DemandPredictor:
             return 0.0, 0.0
 
         if method == "auto":
-            method = self.best_method(forecast_horizon=min(days, len(self.data)))
-
-        daily = 0.0
-        if method == "ma":
-            daily = self.moving_average(window=min(days, len(self.data)))
-        elif method == "wma":
-            daily = self.weighted_moving_average(window=min(days, len(self.data)))
-        elif method == "exp":
-            daily = self.exponential_smoothing()
-        elif method == "reg":
-            daily = self.linear_regression_forecast(steps=days)
-        elif method == "season":
-            daily = self.seasonal_naive(7)
-        elif method == "hw":
-            daily = self.holt_winters()
+            # Prefer ensemble when we have enough history
+            if len(self.data) >= 14:
+                daily = self.ensemble_forecast(days=days)
+            else:
+                method = self.best_method(forecast_horizon=min(days, len(self.data)))
+                daily = self._daily_from_method(method, days)
+        elif method == "ensemble":
+            daily = self.ensemble_forecast(days=days)
         else:
-            daily = self.linear_regression_forecast(steps=days)
+            daily = self._daily_from_method(method, days)
 
-        total_pred = daily * days
+        total_pred = max(0.0, daily * days)
 
         # Confidence interval: use standard deviation of recent data
         recent = self.data[-min(30, len(self.data)):]
@@ -214,6 +277,25 @@ class DemandPredictor:
 
         return total_pred, ci
 
+    def _daily_from_method(self, method: str, days: int) -> float:
+        """Internal helper to map method name to daily forecast."""
+        if method in ("ma", "ma7"):
+            return self.moving_average(window=min(days, len(self.data)))
+        elif method in ("wma", "wma7"):
+            return self.weighted_moving_average(window=min(days, len(self.data)))
+        elif method == "exp":
+            return self.exponential_smoothing()
+        elif method in ("reg", "lin_reg"):
+            return self.linear_regression_forecast(steps=days)
+        elif method in ("season", "season7"):
+            return self.seasonal_naive(7)
+        elif method == "hw":
+            return self.holt_winters()
+        elif method == "intermittent":
+            return self.intermittent_demand()
+        else:
+            return self.linear_regression_forecast(steps=days)
+
     def predict_with_confidence(self, days: int = 7) -> dict:
         """Return detailed forecast including prediction and confidence interval."""
         pred, ci = self.predict_demand(method="auto", days=days)
@@ -222,7 +304,32 @@ class DemandPredictor:
             "predicted_total": round(pred, 2),
             "predicted_daily": round(pred / days, 2) if days else 0,
             "confidence_interval": f"{max(0, pred - ci):.1f} – {pred + ci:.1f}",
-            "confidence_level": "95%"
+            "confidence_level": "95%",
+            "method_used": "ensemble" if len(self.data) >= 14 else self.best_method(),
+        }
+
+    def demand_profile(self) -> dict:
+        """
+        Quick diagnostic of the demand series.
+        Useful for UI to show whether demand is regular or intermittent.
+        """
+        if not self.data:
+            return {
+                "total_days": 0,
+                "non_zero_days": 0,
+                "zero_ratio": 1.0,
+                "avg_when_demand": 0.0,
+                "is_intermittent": True,
+            }
+
+        non_zero = [x for x in self.data if x > 0]
+        zero_ratio = 1.0 - (len(non_zero) / len(self.data))
+        return {
+            "total_days": len(self.data),
+            "non_zero_days": len(non_zero),
+            "zero_ratio": round(zero_ratio, 3),
+            "avg_when_demand": round(float(np.mean(non_zero)), 2) if non_zero else 0.0,
+            "is_intermittent": zero_ratio > 0.5,
         }
 
 
@@ -272,6 +379,7 @@ def predict_item_demand(
     predictor = DemandPredictor(data)
     result = predictor.predict_with_confidence(days)
     result["item_code"] = item_code
+    result["demand_profile"] = predictor.demand_profile()
     return result
 
 
