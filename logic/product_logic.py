@@ -22,8 +22,14 @@ def create_product(db: Session, product_data: Dict) -> Product:
         Created Product object
         
     Raises:
-        ValueError: If product code already exists
+        ValueError: If product code already exists or required fields are missing
     """
+    item_code = (product_data.get("item_code") or "").strip()
+    if not item_code:
+        raise ValueError("Item code is required")
+    product_data = dict(product_data)
+    product_data["item_code"] = item_code
+
     try:
         new_product = Product(**product_data)
         db.add(new_product)
@@ -57,6 +63,8 @@ def update_product(db: Session, item_code: str, update_data: Dict) -> Product:
         raise ValueError(f"Product with code '{item_code}' not found.")
     
     for key, value in update_data.items():
+        if key == "id":
+            continue
         if hasattr(product, key):
             setattr(product, key, value)
         

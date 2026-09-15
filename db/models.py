@@ -284,7 +284,7 @@ class Document(Base):
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    doc_no = Column(String(50), nullable=False, index=True)
+    doc_no = Column(String(50), unique=True, nullable=False, index=True)
     doc_type = Column(String(20), nullable=False, index=True)  # MRR, MIV, MSR, OSND, MTR, etc.
     doc_date = Column(Date, nullable=False, index=True)
     status = Column(String(20), default="DRAFT", nullable=False, index=True)  # DRAFT, APPROVED, REJECTED, CLOSED

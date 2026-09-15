@@ -56,6 +56,11 @@ DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "aimat.db"))
 # Single instance key
 SINGLE_INSTANCE_KEY = "iMatWarehouseEPC_SingleInstance"
 
+# Keep QSharedMemory alive for the process lifetime. A local variable is
+# garbage-collected when check_single_instance() returns, which silently
+# disables the single-instance guard.
+_single_instance_memory = None
+
 # Setup logger
 logger = setup_logger("iMat")
 
@@ -112,14 +117,14 @@ def setup_exception_handler():
 def check_single_instance() -> bool:
     """
     Check if another instance is already running.
-    
+
     Returns:
         True if this is the only instance
     """
-    shared_memory = QSharedMemory(SINGLE_INSTANCE_KEY)
-    
-    if shared_memory.attach():
-        # Another instance is running
+    global _single_instance_memory
+    _single_instance_memory = QSharedMemory(SINGLE_INSTANCE_KEY)
+
+    if _single_instance_memory.attach():
         QMessageBox.warning(
             None,
             "Already Running",
@@ -127,11 +132,10 @@ def check_single_instance() -> bool:
             "Please check your taskbar or system tray for the running instance."
         )
         return False
-    
-    # Create shared memory
-    if not shared_memory.create(1):
+
+    if not _single_instance_memory.create(1):
         logger.warning("Failed to create shared memory for single instance check")
-    
+
     return True
 
 

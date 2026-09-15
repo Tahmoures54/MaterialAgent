@@ -256,3 +256,45 @@ def get_document_summary(
         })
     
     return summary
+
+
+def get_dashboard_kpis(db: Session) -> Dict:
+    """
+    Combined warehouse health snapshot for the home dashboard.
+
+    Returns counts for QC buckets, expiry, preservation, and low-stock items.
+    """
+    from logic.stock_logic import get_stock_summary
+
+    summary = get_stock_summary(db)
+    today = date.today()
+    expiry_cutoff = today + timedelta(days=30)
+    preservation_cutoff = today + timedelta(days=7)
+
+    expiring_soon = db.query(func.count(Stock.id)).filter(
+        Stock.expiry_date != None,  # noqa: E711
+        Stock.expiry_date <= expiry_cutoff,
+        Stock.quantity > 0
+    ).scalar() or 0
+
+    preservation_due = db.query(func.count(Stock.id)).filter(
+        Stock.next_preservation_due != None,  # noqa: E711
+        Stock.next_preservation_due <= preservation_cutoff,
+        Stock.quantity > 0
+    ).scalar() or 0
+
+    pending_requests = db.query(func.count(MaterialRequest.id)).filter(
+        MaterialRequest.status == "PENDING"
+    ).scalar() or 0
+
+    draft_documents = db.query(func.count(Document.id)).filter(
+        Document.status == "DRAFT"
+    ).scalar() or 0
+
+    return {
+        **summary,
+        "expiring_soon": expiring_soon,
+        "preservation_due": preservation_due,
+        "pending_material_requests": pending_requests,
+        "draft_documents": draft_documents,
+    }

@@ -2,7 +2,8 @@
 from .database import (
     init_db, 
     get_db_session, 
-    get_session, 
+    get_session,
+    session_scope,
     SessionLocal, 
     engine, 
     Base,
@@ -30,6 +31,7 @@ __all__ = [
     'init_db',
     'get_db_session',
     'get_session',
+    'session_scope',
     'SessionLocal',
     'engine',
     'Base',

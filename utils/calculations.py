@@ -236,25 +236,28 @@ def get_z_score(service_level: float) -> float:
 # ==================================================================
 
 def calculate_inventory_turnover(
-    cost_of_goods_sold: float,
-    average_inventory_value: float
+    cost_of_goods_sold: float = 0.0,
+    average_inventory_value: float = None,
+    cogs: float = None,
+    average_inventory: float = None,
 ) -> float:
     """
     Calculate Inventory Turnover Ratio.
-    
+
     Formula: Turnover = COGS / Average Inventory Value
-    
-    Args:
-        cost_of_goods_sold: Annual cost of goods sold
-        average_inventory_value: Average inventory value
-    
-    Returns:
-        Inventory turnover ratio (higher is better)
-        Returns 0 if average inventory is 0.
+
+    Accepts either positional names (cost_of_goods_sold, average_inventory_value)
+    or the shorter aliases used by older callers (cogs, average_inventory).
     """
-    if average_inventory_value <= 0:
+    cogs_value = cost_of_goods_sold if cogs is None else cogs
+    inventory_value = (
+        average_inventory_value if average_inventory is None else average_inventory
+    )
+    if inventory_value is None:
+        inventory_value = 0.0
+    if inventory_value <= 0:
         return 0.0
-    return cost_of_goods_sold / average_inventory_value
+    return cogs_value / inventory_value
 
 
 def calculate_days_of_inventory(
@@ -317,11 +320,11 @@ def abc_classification(
     classification = {}
     cumulative = 0.0
     
-    for item, val in sorted_items:
+    for index, (item, val) in enumerate(sorted_items):
         cumulative += val
         cumulative_pct = cumulative / total_value
         
-        if cumulative_pct <= a_threshold:
+        if index == 0 or cumulative_pct <= a_threshold:
             classification[item] = 'A'
         elif cumulative_pct <= b_threshold:
             classification[item] = 'B'
@@ -382,7 +385,20 @@ def calculate_std_dev(demand_data: List[float]) -> float:
 # این خطوط برای سازگاری با کدهای قدیمی اضافه شده‌اند
 # DO NOT REMOVE these aliases
 
-calculate_safety_stock = calculate_safety_stock_service_level
+def calculate_safety_stock(*args, **kwargs):
+    """
+    Backward-compatible safety stock helper.
+
+    Supports the service-level signature and the older keyword form:
+        z_score, lead_time_std, avg_demand_std, avg_lead_time
+    """
+    if "avg_demand_std" in kwargs or "avg_lead_time" in kwargs:
+        z_score = kwargs.get("z_score", 1.65)
+        lead_time_std = float(kwargs.get("lead_time_std") or 0.0)
+        avg_demand_std = float(kwargs.get("avg_demand_std") or 0.0)
+        avg_lead_time = float(kwargs.get("avg_lead_time") or 0.0)
+        return z_score * avg_demand_std * (lead_time_std + avg_lead_time)
+    return calculate_safety_stock_service_level(*args, **kwargs)
 
 # ==================================================================
 # Module Exports

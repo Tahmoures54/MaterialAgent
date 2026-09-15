@@ -368,3 +368,189 @@ class TestRollbackOnError:
         # Verify stock unchanged
         stock = db_session.query(Stock).filter_by(heat_no="HEAT-ROLLBACK").first()
         assert stock.quantity == 50.0
+
+
+class TestDocumentNumberingAndUniqueness:
+    """Document numbers must be unique and auto-generated sequentially."""
+
+    def test_generate_next_doc_number(self, db_session):
+        from logic.document_logic import generate_next_doc_number
+        first = generate_next_doc_number(db_session, "MRR", date.today())
+        assert first.endswith("-0001")
+        assert first.startswith("MRR-")
+
+    def test_duplicate_doc_no_rejected(self, db_session, sample_product, sample_location_warehouse):
+        header = {
+            "doc_no": "MRR-DUP-001",
+            "doc_type": "MRR",
+            "doc_date": date.today(),
+            "to_location_id": sample_location_warehouse.id,
+            "created_by": "test_user",
+        }
+        lines = [{
+            "item_code": sample_product.item_code,
+            "heat_no": "HEAT-DUP",
+            "location_id": sample_location_warehouse.id,
+            "qty": 5.0,
+        }]
+        create_document(db_session, header, lines)
+        with pytest.raises(ValueError, match="already exists"):
+            create_document(db_session, header, lines)
+
+    def test_blank_heat_no_normalized(self, db_session, sample_product, sample_location_warehouse):
+        header = {
+            "doc_no": "MRR-HEAT-BLANK",
+            "doc_type": "MRR",
+            "doc_date": date.today(),
+            "to_location_id": sample_location_warehouse.id,
+            "created_by": "test_user",
+        }
+        lines = [{
+            "item_code": sample_product.item_code,
+            "heat_no": "  ",
+            "location_id": sample_location_warehouse.id,
+            "qty": 8.0,
+        }]
+        create_document(db_session, header, lines)
+        stock = db_session.query(Stock).filter_by(
+            item_code=sample_product.item_code,
+            heat_no="N/A",
+        ).first()
+        assert stock is not None
+        assert stock.quantity == 8.0
+
+
+class TestDeleteReversesStock:
+    """Deleting a DRAFT document must unwind its inventory postings."""
+
+    def test_delete_mrr_reverses_quarantine_stock(
+        self, db_session, sample_product, sample_location_warehouse
+    ):
+        header = {
+            "doc_no": "MRR-REV-001",
+            "doc_type": "MRR",
+            "doc_date": date.today(),
+            "to_location_id": sample_location_warehouse.id,
+            "created_by": "test_user",
+        }
+        lines = [{
+            "item_code": sample_product.item_code,
+            "heat_no": "HEAT-REV-001",
+            "location_id": sample_location_warehouse.id,
+            "qty": 75.0,
+        }]
+        doc = create_document(db_session, header, lines)
+        stock = db_session.query(Stock).filter_by(heat_no="HEAT-REV-001").first()
+        assert stock.quantity == 75.0
+
+        delete_document(db_session, doc.id)
+        stock = db_session.query(Stock).filter_by(heat_no="HEAT-REV-001").first()
+        assert stock is None or stock.quantity == 0.0
+        assert db_session.query(Document).filter_by(id=doc.id).first() is None
+
+    def test_delete_miv_restores_accepted_stock(
+        self, db_session, sample_product, sample_location_warehouse
+    ):
+        from logic.stock_logic import add_stock
+        add_stock(
+            db_session, sample_product.item_code, "HEAT-REV-MIV",
+            sample_location_warehouse.id, 100.0, qc_status="ACCEPTED"
+        )
+        db_session.commit()
+
+        header = {
+            "doc_no": "MIV-REV-001",
+            "doc_type": "MIV",
+            "doc_date": date.today(),
+            "from_location_id": sample_location_warehouse.id,
+            "created_by": "test_user",
+        }
+        lines = [{
+            "item_code": sample_product.item_code,
+            "heat_no": "HEAT-REV-MIV",
+            "location_id": sample_location_warehouse.id,
+            "qty": 25.0,
+        }]
+        doc = create_document(db_session, header, lines)
+        stock = db_session.query(Stock).filter_by(heat_no="HEAT-REV-MIV").first()
+        assert stock.quantity == 75.0
+
+        delete_document(db_session, doc.id)
+        stock = db_session.query(Stock).filter_by(heat_no="HEAT-REV-MIV").first()
+        assert stock.quantity == 100.0
+
+    def test_delete_mtr_reverses_transfer(
+        self, db_session, sample_product, sample_location_warehouse, sample_location_yard
+    ):
+        from logic.stock_logic import add_stock
+        add_stock(
+            db_session, sample_product.item_code, "HEAT-REV-MTR",
+            sample_location_warehouse.id, 80.0, qc_status="ACCEPTED"
+        )
+        db_session.commit()
+
+        header = {
+            "doc_no": "MTR-REV-001",
+            "doc_type": "MTR",
+            "doc_date": date.today(),
+            "from_location_id": sample_location_warehouse.id,
+            "to_location_id": sample_location_yard.id,
+            "created_by": "test_user",
+        }
+        lines = [{
+            "item_code": sample_product.item_code,
+            "heat_no": "HEAT-REV-MTR",
+            "location_id": sample_location_warehouse.id,
+            "qty": 30.0,
+        }]
+        doc = create_document(db_session, header, lines)
+        delete_document(db_session, doc.id)
+
+        source = db_session.query(Stock).filter_by(
+            heat_no="HEAT-REV-MTR", location_id=sample_location_warehouse.id
+        ).first()
+        dest = db_session.query(Stock).filter_by(
+            heat_no="HEAT-REV-MTR", location_id=sample_location_yard.id
+        ).first()
+        assert source.quantity == 80.0
+        assert dest is None or dest.quantity == 0.0
+
+    def test_cannot_delete_mrr_after_qc_release(
+        self, db_session, sample_product, sample_location_warehouse
+    ):
+        from logic.stock_logic import change_qc_status
+        header = {
+            "doc_no": "MRR-REV-QC",
+            "doc_type": "MRR",
+            "doc_date": date.today(),
+            "to_location_id": sample_location_warehouse.id,
+            "created_by": "test_user",
+        }
+        lines = [{
+            "item_code": sample_product.item_code,
+            "heat_no": "HEAT-REV-QC",
+            "location_id": sample_location_warehouse.id,
+            "qty": 40.0,
+        }]
+        doc = create_document(db_session, header, lines)
+        change_qc_status(
+            db_session,
+            sample_product.item_code,
+            "HEAT-REV-QC",
+            sample_location_warehouse.id,
+            "QUARANTINE",
+            "ACCEPTED",
+            40.0,
+        )
+        db_session.commit()
+
+        with pytest.raises(ValueError):
+            delete_document(db_session, doc.id)
+
+        # Document and accepted stock must remain
+        assert db_session.query(Document).filter_by(id=doc.id).first() is not None
+        accepted = db_session.query(Stock).filter_by(
+            heat_no="HEAT-REV-QC", qc_status="ACCEPTED"
+        ).first()
+        assert accepted is not None
+        assert accepted.quantity == 40.0

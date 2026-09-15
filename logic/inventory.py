@@ -5,6 +5,7 @@ Provides search, filtering, and CRUD operations for inventory data.
 """
 
 from sqlalchemy import func, or_, and_
+from sqlalchemy.orm import Session
 from datetime import date, datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 import sys
@@ -12,9 +13,9 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from db.database import get_db_session, get_session
+from db.database import get_db_session, get_session, session_scope
 from db.models import (
-    Product, Transaction, InventorySummary, 
+    Product, Transaction, InventorySummary,
     Stock, Location, Document, DocumentLine
 )
 
@@ -27,7 +28,8 @@ def search_inventory(
     low_stock_only: bool = False,
     expired_only: bool = False,
     limit: Optional[int] = None,
-    offset: Optional[int] = None
+    offset: Optional[int] = None,
+    db: Optional[Session] = None,
 ) -> List[Dict]:
     """
     Search inventory with comprehensive filters using the Stock model.
@@ -45,8 +47,7 @@ def search_inventory(
     Returns:
         List of dicts with inventory data
     """
-    session = get_db_session()
-    try:
+    with session_scope(db) as session:
         query = session.query(
             Stock.item_code,
             Product.description,
@@ -143,44 +144,36 @@ def search_inventory(
                 "Last Movement": row.last_movement_date.isoformat() if row.last_movement_date else "",
             })
         return data
-    finally:
-        session.close()
 
 
-def get_filter_options() -> Dict[str, List[str]]:
+def get_filter_options(db: Optional[Session] = None) -> Dict[str, List[str]]:
     """
     Get distinct filter values for dropdown menus.
     
     Returns:
         Dict with keys: qc_statuses, disciplines, locations, categories, material_classes
     """
-    session = get_db_session()
-    try:
-        # QC Statuses
+    with session_scope(db) as session:
         qc_statuses = [
             row[0] for row in session.query(Stock.qc_status).distinct().all()
             if row[0]
         ]
 
-        # Disciplines
         disciplines = [
             row[0] for row in session.query(Product.discipline).distinct().all()
             if row[0]
         ]
 
-        # Locations
         locations = [
             row[0] for row in session.query(Location.code).order_by(Location.code).all()
             if row[0]
         ]
 
-        # Categories
         categories = [
             row[0] for row in session.query(Product.category).distinct().all()
             if row[0]
         ]
 
-        # Material Classes
         material_classes = [
             row[0] for row in session.query(Product.material_class).distinct().all()
             if row[0]
@@ -193,14 +186,11 @@ def get_filter_options() -> Dict[str, List[str]]:
             "categories": sorted(categories),
             "material_classes": sorted(material_classes),
         }
-    finally:
-        session.close()
 
 
-def get_inventory_by_item(item_code: str) -> List[Dict]:
+def get_inventory_by_item(item_code: str, db: Optional[Session] = None) -> List[Dict]:
     """Get all stock records for a specific item."""
-    session = get_db_session()
-    try:
+    with session_scope(db) as session:
         stocks = session.query(Stock).filter(
             Stock.item_code == item_code,
             Stock.quantity > 0
@@ -208,7 +198,7 @@ def get_inventory_by_item(item_code: str) -> List[Dict]:
 
         result = []
         for stock in stocks:
-            location = session.query(Location).get(stock.location_id)
+            location = session.query(Location).filter_by(id=stock.location_id).first()
             product = session.query(Product).filter_by(item_code=stock.item_code).first()
 
             result.append({
@@ -224,27 +214,27 @@ def get_inventory_by_item(item_code: str) -> List[Dict]:
                 "preservation_due": stock.next_preservation_due,
             })
         return result
-    finally:
-        session.close()
 
 
-def get_all_inventory(limit: int = 1000) -> List[Dict]:
+def get_all_inventory(limit: int = 1000, db: Optional[Session] = None) -> List[Dict]:
     """Get all inventory records (simplified version)."""
-    return search_inventory(limit=limit)
+    return search_inventory(limit=limit, db=db)
 
 
-def add_transaction(transaction_data: Dict) -> int:
+def add_transaction(transaction_data: Dict, db: Optional[Session] = None) -> int:
     """
     Add a new transaction to the database.
     This is for the legacy transaction system.
     
     Args:
         transaction_data: Dict with Transaction model fields
+        db: Optional existing session
         
     Returns:
         ID of the new transaction
     """
-    session = get_db_session()
+    owns_session = db is None
+    session = db if db is not None else get_db_session()
     try:
         trans = Transaction(
             item_code=transaction_data.get('item_code'),
@@ -272,24 +262,29 @@ def add_transaction(transaction_data: Dict) -> int:
             created_by=transaction_data.get('created_by', 'system')
         )
         session.add(trans)
-        session.flush()  # Get the ID
+        session.flush()
         
-        # Update inventory summary
         _update_inventory_summary_internal(session, transaction_data.get('item_code'))
         
-        session.commit()
+        if owns_session:
+            session.commit()
         return trans.id
-    except Exception as e:
+    except Exception:
         session.rollback()
-        raise e
+        raise
     finally:
-        session.close()
+        if owns_session:
+            session.close()
 
 
-def update_inventory_summary(item_code: str):
+def update_inventory_summary(item_code: str, db: Optional[Session] = None):
     """Update inventory summary for an item (public wrapper)."""
+    if db is not None:
+        _update_inventory_summary_internal(db, item_code)
+        return
     with get_session() as session:
         _update_inventory_summary_internal(session, item_code)
+        session.commit()
 
 
 def _update_inventory_summary_internal(session, item_code: str):

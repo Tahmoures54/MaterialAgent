@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import StaticPool
 from contextlib import contextmanager
@@ -59,11 +59,12 @@ def get_engine(database_url: Optional[str] = None, echo: bool = False):
     if database_url.startswith('sqlite'):
         _engine = create_engine(
             database_url,
-            connect_args={"check_same_thread": False},
+            connect_args={"check_same_thread": False, "timeout": 30},
             echo=echo,
             poolclass=StaticPool,
             pool_pre_ping=True
         )
+        _enable_sqlite_pragmas(_engine)
     else:
         # PostgreSQL / MySQL / etc.
         _engine = create_engine(
@@ -78,6 +79,21 @@ def get_engine(database_url: Optional[str] = None, echo: bool = False):
     _current_db_url = database_url
     logger.info(f"Database engine created: {database_url}")
     return _engine
+
+
+def _enable_sqlite_pragmas(engine) -> None:
+    """Enable WAL, foreign keys, and a busy timeout on every SQLite connection."""
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, _connection_record):
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA busy_timeout=5000")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+        finally:
+            cursor.close()
 
 
 def get_session_factory():
@@ -139,6 +155,7 @@ def init_db(database_url: Optional[str] = None, drop_all: bool = False):
         
         # Seed default data if needed
         _seed_default_data()
+        _ensure_sqlite_indexes()
         
         logger.info(f"Database initialized successfully at {_current_db_url}")
         return True
@@ -170,6 +187,20 @@ def _seed_default_data():
         session.close()
 
 
+def _ensure_sqlite_indexes():
+    """Add uniqueness indexes that create_all will not retrofit on existing files."""
+    if not _engine or not (_current_db_url or "").startswith("sqlite"):
+        return
+    try:
+        with _engine.begin() as conn:
+            conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_documents_doc_no "
+                "ON documents (doc_no)"
+            ))
+    except Exception as e:
+        logger.debug(f"Could not ensure document number unique index: {e}")
+
+
 def get_db_session():
     """
     Return a new database session.
@@ -195,6 +226,23 @@ def get_session():
         raise
     finally:
         db.close()
+
+
+@contextmanager
+def session_scope(db=None):
+    """
+    Yield an existing session, or open a short-lived one that is closed on exit.
+
+    Used by inventory/report helpers so tests can inject an in-memory session
+    while production code still works without passing a session.
+    """
+    owns_session = db is None
+    session = db if db is not None else _get_session_local()()
+    try:
+        yield session
+    finally:
+        if owns_session:
+            session.close()
 
 
 def reset_database(database_url: Optional[str] = None):
