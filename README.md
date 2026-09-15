@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![iMat Logo](resources/images/logo_large.png)
-
 **Where Inventory Meets Artificial Intelligence**
 
 *Intelligent Material Control System for Oil, Gas & Petrochemical EPC Projects*
