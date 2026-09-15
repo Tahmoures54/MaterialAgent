@@ -5,18 +5,35 @@
     "client_name": "",
     "contract_no": "",
     "project_location": "",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "default_theme": "light",
     "default_language": "en",
     "license_required": true,
 
     "database": {
+        "engine": "sqlite",
         "path": "aimat.db",
         "backup_on_start": false,
         "backup_on_close": true,
         "vacuum_on_close": true,
         "pool_size": 5,
-        "timeout": 30
+        "timeout": 30,
+
+        "sqlserver": {
+            "enabled": false,
+            "driver": "ODBC Driver 17 for SQL Server",
+            "server": "localhost",
+            "port": 1433,
+            "database": "iMat",
+            "username": "",
+            "password": "",
+            "trusted_connection": false,
+            "encrypt": true,
+            "trust_server_certificate": true,
+            "connection_timeout": 30,
+            "pool_size": 10,
+            "max_overflow": 20
+        }
     },
 
     "auto_backup": {
