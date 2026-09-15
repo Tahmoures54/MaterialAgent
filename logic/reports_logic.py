@@ -7,7 +7,7 @@ Uses the new Stock/Location/Document models.
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from datetime import date, timedelta
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from db.models import (
     Stock, Product, Location, Document, DocumentLine,
     Transaction, MaterialRequest, MaterialRequestLine
@@ -15,23 +15,12 @@ from db.models import (
 
 
 def get_current_inventory(
-    db: Session, 
+    db: Session,
     item_code: Optional[str] = None,
     location_id: Optional[int] = None,
     qc_status: Optional[str] = None
 ) -> List:
-    """
-    Retrieve live inventory with optional filtering.
-    
-    Args:
-        db: Database session
-        item_code: Filter by item code (partial match)
-        location_id: Filter by location
-        qc_status: Filter by QC status
-        
-    Returns:
-        List of Stock records with Product and Location info
-    """
+    """Retrieve live inventory with optional filtering."""
     query = db.query(
         Stock.item_code,
         Product.description,
@@ -47,27 +36,22 @@ def get_current_inventory(
     ).join(Product, Stock.item_code == Product.item_code)\
      .join(Location, Stock.location_id == Location.id)\
      .filter(Stock.quantity > 0)
-    
+
     if item_code:
         query = query.filter(Stock.item_code.contains(item_code))
     if location_id:
         query = query.filter(Stock.location_id == location_id)
     if qc_status:
         query = query.filter(Stock.qc_status == qc_status)
-    
+
     return query.order_by(Stock.item_code, Stock.heat_no).all()
 
 
 def get_preservation_alerts(db: Session) -> List:
-    """
-    Get materials whose preservation due date has passed or is approaching.
-    
-    Returns:
-        List of Stock records needing preservation
-    """
+    """Materials whose preservation due date has passed or is approaching."""
     today = date.today()
-    warning_date = today + timedelta(days=7)  # Alert 7 days before due
-    
+    warning_date = today + timedelta(days=7)
+
     return db.query(
         Stock.item_code,
         Product.description,
@@ -86,17 +70,7 @@ def get_preservation_alerts(db: Session) -> List:
 
 
 def get_traceability_report(db: Session, heat_no: str) -> List:
-    """
-    Full material traceability for a given heat number.
-    Shows all documents (receipts, issues, transfers) and current location.
-    
-    Args:
-        db: Database session
-        heat_no: Heat/batch number to trace
-        
-    Returns:
-        List of document line records
-    """
+    """Full material traceability for a given heat number."""
     return db.query(
         Document.doc_no,
         Document.doc_type,
@@ -120,24 +94,12 @@ def get_stock_movements(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None
 ) -> List:
-    """
-    Get stock movement history for an item.
-    Combines Transaction and Document data.
-    
-    Args:
-        db: Database session
-        item_code: Material code
-        start_date: Start date filter
-        end_date: End date filter
-        
-    Returns:
-        List of movement records
-    """
+    """Stock movement history for an item."""
     if start_date is None:
         start_date = date.today() - timedelta(days=90)
     if end_date is None:
         end_date = date.today()
-    
+
     return db.query(
         Transaction.doc_date,
         Transaction.doc_no,
@@ -158,46 +120,25 @@ def get_stock_movements(
 
 
 def get_qc_summary(db: Session) -> Dict:
-    """
-    Get QC summary statistics.
-    
-    Returns:
-        Dict with counts and quantities by QC status
-    """
+    """QC summary statistics by status."""
     results = {}
     for status in ['QUARANTINE', 'ACCEPTED', 'REJECTED']:
         count = db.query(func.count(Stock.id)).filter(
             Stock.qc_status == status,
             Stock.quantity > 0
         ).scalar() or 0
-        
         total_qty = db.query(func.sum(Stock.quantity)).filter(
             Stock.qc_status == status,
             Stock.quantity > 0
         ).scalar() or 0
-        
-        results[status] = {
-            "item_count": count,
-            "total_quantity": total_qty
-        }
-    
+        results[status] = {"item_count": count, "total_quantity": total_qty}
     return results
 
 
 def get_expiry_report(db: Session, days_threshold: int = 30) -> List:
-    """
-    Get items expiring within the given threshold.
-    
-    Args:
-        db: Database session
-        days_threshold: Number of days to look ahead
-        
-    Returns:
-        List of Stock records expiring soon
-    """
+    """Items expiring within the given threshold."""
     today = date.today()
     cutoff = today + timedelta(days=days_threshold)
-    
     return db.query(
         Stock.item_code,
         Product.description,
@@ -220,26 +161,14 @@ def get_document_summary(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None
 ) -> List:
-    """
-    Get document summary with total quantities.
-    
-    Args:
-        db: Database session
-        start_date: Start date filter
-        end_date: End date filter
-        
-    Returns:
-        List of document summaries
-    """
+    """Document summary with total quantities."""
     if start_date is None:
         start_date = date.today() - timedelta(days=30)
     if end_date is None:
         end_date = date.today()
-    
     documents = db.query(Document).filter(
         Document.doc_date.between(start_date, end_date)
     ).order_by(Document.doc_date.desc()).all()
-    
     summary = []
     for doc in documents:
         total_qty = sum(line.qty for line in doc.lines)
@@ -254,16 +183,11 @@ def get_document_summary(
             "total_qty": total_qty,
             "created_by": doc.created_by or "",
         })
-    
     return summary
 
 
 def get_dashboard_kpis(db: Session) -> Dict:
-    """
-    Combined warehouse health snapshot for the home dashboard.
-
-    Returns counts for QC buckets, expiry, preservation, and low-stock items.
-    """
+    """Warehouse health snapshot for the home dashboard."""
     from logic.stock_logic import get_stock_summary
 
     summary = get_stock_summary(db)
@@ -272,13 +196,13 @@ def get_dashboard_kpis(db: Session) -> Dict:
     preservation_cutoff = today + timedelta(days=7)
 
     expiring_soon = db.query(func.count(Stock.id)).filter(
-        Stock.expiry_date != None,  # noqa: E711
+        Stock.expiry_date != None,
         Stock.expiry_date <= expiry_cutoff,
         Stock.quantity > 0
     ).scalar() or 0
 
     preservation_due = db.query(func.count(Stock.id)).filter(
-        Stock.next_preservation_due != None,  # noqa: E711
+        Stock.next_preservation_due != None,
         Stock.next_preservation_due <= preservation_cutoff,
         Stock.quantity > 0
     ).scalar() or 0
@@ -298,3 +222,149 @@ def get_dashboard_kpis(db: Session) -> Dict:
         "pending_material_requests": pending_requests,
         "draft_documents": draft_documents,
     }
+
+
+def get_material_shortage_report(
+    db: Session,
+    include_closed: bool = False,
+) -> List[Dict[str, Any]]:
+    """
+    Compare open Material Request lines with available ACCEPTED stock.
+    Returns coverage status: FULFILLED / COVERED / PARTIAL / SHORTAGE.
+    """
+    open_statuses = ("PENDING", "APPROVED", "PARTIAL")
+    q = (
+        db.query(MaterialRequestLine, MaterialRequest, Product)
+        .join(MaterialRequest, MaterialRequestLine.request_id == MaterialRequest.id)
+        .outerjoin(Product, MaterialRequestLine.item_code == Product.item_code)
+    )
+    if not include_closed:
+        q = q.filter(MaterialRequest.status.in_(open_statuses))
+
+    rows: List[Dict[str, Any]] = []
+    for line, req, product in q.order_by(
+        MaterialRequest.request_no, MaterialRequestLine.line_number
+    ).all():
+        needed = float(line.qty or 0)
+        fulfilled = float(getattr(line, "fulfilled_qty", 0) or 0)
+        remaining = max(0.0, needed - fulfilled)
+
+        stock_rows = (
+            db.query(Stock)
+            .filter(
+                Stock.item_code == line.item_code,
+                Stock.qc_status == "ACCEPTED",
+            )
+            .all()
+        )
+        available = 0.0
+        for s in stock_rows:
+            qty = float(s.quantity or 0)
+            allocated = float(getattr(s, "allocated_qty", 0) or 0)
+            available += max(0.0, qty - allocated)
+
+        shortage = max(0.0, remaining - available)
+        if remaining <= 0:
+            status = "FULFILLED"
+        elif shortage <= 0:
+            status = "COVERED"
+        elif available > 0:
+            status = "PARTIAL"
+        else:
+            status = "SHORTAGE"
+
+        rows.append({
+            "request_no": req.request_no,
+            "request_status": req.status,
+            "requester": req.requester,
+            "discipline": req.discipline or (product.discipline if product else ""),
+            "wbs_code": req.wbs_code or "",
+            "iso_drawing_no": req.iso_drawing_no or "",
+            "required_date": req.required_date.isoformat() if req.required_date else "",
+            "item_code": line.item_code,
+            "description": (line.description or (product.description if product else "") or ""),
+            "unit": line.unit or "EA",
+            "requested_qty": needed,
+            "fulfilled_qty": fulfilled,
+            "remaining_qty": remaining,
+            "available_stock": round(available, 3),
+            "shortage_qty": round(shortage, 3),
+            "coverage_status": status,
+        })
+    return rows
+
+
+def get_po_receipt_summary(db: Session) -> List[Dict[str, Any]]:
+    """MRR/related receipts linked to PO, vendor, and delivery note."""
+    docs = (
+        db.query(Document)
+        .filter(Document.doc_type.in_(("MRR", "MSR", "OSND")))
+        .order_by(Document.doc_date.desc())
+        .all()
+    )
+    rows: List[Dict[str, Any]] = []
+    for doc in docs:
+        lines = doc.lines or []
+        total_qty = sum(float(ln.qty or 0) for ln in lines)
+        damage = sum(float(getattr(ln, "damaged_qty", 0) or 0) for ln in lines)
+        short = sum(float(getattr(ln, "shortage_qty", 0) or 0) for ln in lines)
+        rows.append({
+            "doc_no": doc.doc_no,
+            "doc_type": doc.doc_type,
+            "doc_date": doc.doc_date.isoformat() if doc.doc_date else "",
+            "status": doc.status,
+            "po_no": doc.po_no or "",
+            "delivery_note_no": doc.delivery_note_no or "",
+            "reference_no": doc.reference_no or "",
+            "vendor_name": doc.vendor_name or "",
+            "line_count": len(lines),
+            "total_qty": round(total_qty, 3),
+            "damaged_qty": round(damage, 3),
+            "shortage_qty": round(short, 3),
+            "remarks": doc.remarks or "",
+        })
+    return rows
+
+
+def get_in_transit_report(db: Session) -> List[Dict[str, Any]]:
+    """Open MTR transfers between locations (simple in-transit view)."""
+    docs = (
+        db.query(Document)
+        .filter(Document.doc_type == "MTR")
+        .filter(Document.status.in_(("DRAFT", "APPROVED", "IN_TRANSIT", "PENDING")))
+        .order_by(Document.doc_date.desc())
+        .all()
+    )
+    rows: List[Dict[str, Any]] = []
+    for doc in docs:
+        from_code = doc.from_location.code if doc.from_location else ""
+        to_code = doc.to_location.code if doc.to_location else ""
+        lines = doc.lines or []
+        if not lines:
+            rows.append({
+                "doc_no": doc.doc_no,
+                "doc_date": doc.doc_date.isoformat() if doc.doc_date else "",
+                "status": doc.status,
+                "item_code": "",
+                "heat_no": "",
+                "qty": 0.0,
+                "unit": "",
+                "from_location": from_code,
+                "to_location": to_code,
+                "remarks": doc.remarks or "",
+            })
+            continue
+        for ln in lines:
+            rows.append({
+                "doc_no": doc.doc_no,
+                "doc_date": doc.doc_date.isoformat() if doc.doc_date else "",
+                "status": doc.status,
+                "item_code": ln.item_code,
+                "heat_no": ln.heat_no or "",
+                "qty": float(ln.qty or 0),
+                "unit": ln.unit or "EA",
+                "from_location": from_code,
+                "to_location": to_code,
+                "remarks": doc.remarks or "",
+            })
+    return rows
