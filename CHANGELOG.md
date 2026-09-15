@@ -1,51 +1,27 @@
 # Changelog
 
-## [Unreleased]
+## [2.3.1] - 2026-09-15
 
-### Planned
-- Restore full visual style of help_fa/help_en from git history if needed
-- Wire remaining Persian UI strings across all dialogs
-- Deeper offline AI backtesting on real project extracts
+### Fixed (product gaps)
+- **System → Settings** opens the real database engine dialog (SQLite / SQL Server)
+- English **User Manual** restored (Quick Start, flow, database, AI, roles)
+- Help prefers `help_en.html` (app language is English)
+- Clearer empty-stock status guidance
+- Database error text mentions SQL Server connectivity
+- Version aligned to **2.3.0+**
 
-## [2.3.0] - 2026-09-15
-
-### Added
-- `ui/database_settings_dialog.py` — GUI to switch SQLite ↔ SQL Server (save to config, restart required)
-- `docs/DEPLOYMENT.md` — single-user and multi-user network checklist
-- `docs/DEVELOPER.md` — architecture and API notes for contributors
-- `packaging/imat.spec` + `packaging/build_windows.ps1` — PyInstaller Windows build
-- SQL Server URL builder tests
-
-### Fixed
-- Module-level `engine` proxy restored (`from db.database import engine` works again)
-
-### Improved
-- Start dialog shows SQL Server + ensemble AI highlights (v2.2 branding)
-
-### Note for integrators
-Open database settings from code:
-```python
-from ui.database_settings_dialog import DatabaseSettingsDialog
-DatabaseSettingsDialog(parent).exec()
-```
-Hook into `MainWindow.on_settings` (admin only) if not already wired in your branch.
+### Already in 2.3.0
+- DatabaseSettingsDialog, deployment/developer docs, PyInstaller scripts
+- `engine` import proxy restored
 
 ## [2.2.0] - 2026-09-15
-
-### Added
-- SQL Server support via `app_config.json` (`database.engine` + `sqlserver` block)
+- SQL Server support via config
 
 ## [2.1.0] - 2026-09-15
-
-### Added (AI)
-- Ensemble forecasting, intermittent demand, `demand_profile()`
+- AI ensemble + intermittent demand
 
 ## [2.0.0] - 2026-09-15
-
-### Hardened
-- Draft delete reverses stock, unique doc numbers, SQLite WAL/FK, session injection for tests
+- Inventory integrity hardening, tests, WAL/FK
 
 ## [1.0.0] - 2026-07-27
-
-### Added
 - Initial release
