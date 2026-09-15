@@ -7,6 +7,10 @@ PyQt6>=6.5.0
 # Database
 SQLAlchemy>=1.4,<3.0
 
+# Optional: Microsoft SQL Server support (only needed when database.engine = "sqlserver")
+# pyodbc>=4.0.39
+# Also install "ODBC Driver 17 for SQL Server" (or 18) from Microsoft.
+
 # Data / AI
 numpy>=1.24.0
 pandas>=1.5.0
