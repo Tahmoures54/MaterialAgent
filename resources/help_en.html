@@ -1,48 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>iMat User Manual</title>
-    <style>body{font-family:system-ui,sans-serif;padding:20px;line-height:1.7}h1,h2{color:#004D40}section{margin:24px 0;padding:16px;background:#f9f9f9;border-radius:8px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#004D40;color:#fff}code{background:#e8f5e9;padding:2px 6px}</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iMat Warehouse – User Manual</title>
+<style>
+:root{--p:#004D40;--pl:#00695C;--bg:#F4F7F6;--card:#fff;--text:#2D3748;--muted:#718096;--border:#E2E8F0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Segoe UI,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:28px 20px 60px}
+header{background:linear-gradient(135deg,#00332c,#00695C);color:#fff;padding:48px 28px;border-radius:16px;margin-bottom:24px;text-align:center}
+header h1{font-size:2rem;margin-bottom:6px}
+nav{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px}
+nav a{color:var(--pl);text-decoration:none;margin-right:14px;font-size:.95rem}
+section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+h2{color:var(--p);font-size:1.35rem;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E0F2F1}
+h3{color:var(--pl);margin:16px 0 8px}
+ul,ol{padding-left:22px;margin:8px 0 12px}
+li{margin-bottom:6px}
+table{width:100%;border-collapse:collapse;margin:12px 0}
+th{background:var(--p);color:#fff;text-align:left;padding:10px}
+td{padding:9px 10px;border-bottom:1px solid var(--border)}
+tr:nth-child(even){background:#FAFAFA}
+.tip{background:#E0F2F1;border-left:4px solid var(--p);padding:12px 14px;margin:12px 0;border-radius:0 8px 8px 0}
+.warn{background:#FFF8E1;border-left:4px solid #F59E0B;padding:12px 14px;margin:12px 0;border-radius:0 8px 8px 0}
+code{background:#E8F5E9;color:#1B5E20;padding:2px 6px;border-radius:4px}
+pre{background:#263238;color:#ECEFF1;padding:14px;border-radius:8px;overflow:auto;font-size:.85rem}
+footer{text-align:center;color:var(--muted);margin-top:28px;font-size:.9rem}
+.flow{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;font-weight:600;color:var(--p)}
+.flow span{background:#E0F2F1;padding:6px 12px;border-radius:20px;font-size:.9rem}
+</style>
 </head>
 <body>
-<h1>iMat Warehouse User Manual</h1>
-<p>Material Control System for EPC Projects — Version 2.2</p>
-
-<section id="welcome">
-<h2>Welcome</h2>
-<p>iMat is built with <strong>PyQt6</strong> and defaults to <strong>SQLite</strong>. From version 2.2 you can also connect to <strong>SQL Server</strong> for multi-user network use.</p>
+<div class="wrap">
+<header>
+  <h1>iMat Warehouse</h1>
+  <p>Intelligent Material Control for EPC Projects</p>
+  <p style="margin-top:8px;font-size:.9rem;opacity:.85">User Manual · Version 2.3</p>
+</header>
+<nav>
+  <a href="#start">Quick Start</a>
+  <a href="#flow">Document Flow</a>
+  <a href="#database">Database</a>
+  <a href="#ai">AI Tools</a>
+  <a href="#roles">Roles</a>
+  <a href="#tips">Tips</a>
+  <a href="#support">Support</a>
+</nav>
+<section id="start">
+  <h2>1. Quick Start</h2>
+  <ol>
+    <li>Log in (Admin creates users under <strong>Teamwork → Manage Users</strong>).</li>
+    <li>Define items in <strong>Material Control → Material Coding</strong>.</li>
+    <li>Map <strong>Warehouse → Rack → Bin</strong> under Warehouse & Locations.</li>
+    <li>Receive stock with an <strong>MRR</strong> (quarantine).</li>
+    <li>Release with <strong>QC Release</strong>, then issue with <strong>MIV</strong>.</li>
+  </ol>
+  <div class="tip"><strong>Integrity:</strong> Deleting a Draft document reverses any stock it posted so inventory cannot silently inflate.</div>
 </section>
-
+<section id="flow">
+  <h2>2. Core Document Flow</h2>
+  <div class="flow"><span>MRR Receive</span> → <span>QC Release</span> → <span>MIV Issue</span></div>
+  <p>Also: MTR (transfer), OS&D, Material Requests, Preservation, Expiry monitoring.</p>
+</section>
 <section id="database">
-<h2>Database: SQLite or SQL Server</h2>
-<table>
-<tr><th>Mode</th><th>Best for</th></tr>
-<tr><td>SQLite (default)</td><td>Single-user, offline</td></tr>
-<tr><td>SQL Server</td><td>Multi-user on a network</td></tr>
-</table>
-<h3>Enabling SQL Server</h3>
-<ol>
-<li>Install Microsoft ODBC Driver 17/18</li>
-<li><code>pip install pyodbc</code></li>
-<li>In <code>app_config.json</code>: set <code>database.engine = "sqlserver"</code> and fill the sqlserver section</li>
-</ol>
-<p><strong>Note:</strong> File-based backup is SQLite-only.</p>
+  <h2>3. Database: SQLite or SQL Server</h2>
+  <table>
+    <tr><th>Mode</th><th>Best for</th></tr>
+    <tr><td><strong>SQLite</strong> (default)</td><td>Single user, offline site laptop</td></tr>
+    <tr><td><strong>SQL Server</strong></td><td>Multi-user on a company network</td></tr>
+  </table>
+  <h3>Switch via UI</h3>
+  <p><strong>System → Settings</strong> (Admin). Choose engine, fill SQL Server fields if needed, Save, then <strong>restart</strong> the app.</p>
+  <h3>Or via app_config.json</h3>
+  <pre>"database": {
+  "engine": "sqlserver",
+  "sqlserver": {
+    "enabled": true,
+    "server": "YOUR_SERVER",
+    "database": "iMat",
+    "username": "imat_user",
+    "password": "********",
+    "driver": "ODBC Driver 17 for SQL Server"
+  }
+}</pre>
+  <div class="warn"><strong>Note:</strong> File backups apply only to SQLite. For SQL Server use server backups. Install ODBC Driver 17/18 and <code>pip install pyodbc</code> on each client.</div>
 </section>
-
 <section id="ai">
-<h2>AI Features</h2>
-<ul>
-<li>Demand prediction with ensemble and intermittent methods</li>
-<li>EOQ, Safety Stock, ABC analysis</li>
-<li>Offline Q&amp;A assistant (English / Persian)</li>
-</ul>
+  <h2>4. AI Tools (Offline)</h2>
+  <ul>
+    <li><strong>Demand prediction</strong> — classic methods, intermittent demand, ensemble</li>
+    <li><strong>EOQ / Safety stock / Reorder point</strong></li>
+    <li><strong>ABC analysis</strong></li>
+    <li><strong>Inventory Assistant</strong> — stock Q&A without internet</li>
+  </ul>
 </section>
-
+<section id="roles">
+  <h2>5. User Roles</h2>
+  <table>
+    <tr><th>Role</th><th>Access</th></tr>
+    <tr><td>Admin</td><td>Full access, users, license, database settings</td></tr>
+    <tr><td>Operator</td><td>Documents, stock movements, QC</td></tr>
+    <tr><td>Technical Office</td><td>Material requests, stock visibility</td></tr>
+    <tr><td>QC Inspector</td><td>QC release, preservation, expiry</td></tr>
+    <tr><td>Viewer</td><td>Read-only reports and stock</td></tr>
+  </table>
+</section>
+<section id="tips">
+  <h2>6. Practical Tips</h2>
+  <ul>
+    <li>Run MRR → QC → MIV with sample data before production.</li>
+    <li>After changing database engine, fully close and reopen the app.</li>
+    <li>Logs are under the <code>logs</code> folder.</li>
+    <li>Windows build: <code>packaging/build_windows.ps1</code></li>
+    <li>Deployment checklist: <code>docs/DEPLOYMENT.md</code></li>
+  </ul>
+</section>
 <section id="support">
-<h2>Support</h2>
-<p>WhatsApp: +98 916 068 4552 · <a href="https://www.imat.io">www.imat.io</a></p>
-<p>The previous full-styled help is available in git history and will be restored with full layout shortly.</p>
+  <h2>7. Support</h2>
+  <ul>
+    <li>Website: <a href="https://www.imat.io">www.imat.io</a></li>
+    <li>WhatsApp: +98 916 068 4552</li>
+    <li>Email: support@imat.io</li>
+  </ul>
 </section>
+<footer>iMat Warehouse · Material Control for EPC · www.imat.io</footer>
+</div>
 </body>
 </html>
