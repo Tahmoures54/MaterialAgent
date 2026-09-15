@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>راهنمای کاربری iMat Warehouse | کنترل مواد هوشمند پروژه‌های EPC</title>
+  <style>
+    :root {
+      --primary: #004D40;
+      --primary-light: #00796B;
+      --accent: #E0F2F1;
+      --text: #263238;
+      --muted: #607D8B;
+      --border: #E0E0E0;
+      --bg: #F5F7FA;
+      --card: #FFFFFF;
+      --success: #2E7D32;
+      --warn: #F57F17;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Tahoma, "Vazirmatn", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.85;
+      font-size: 15.5px;
+    }
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, #00695C 100%);
+      color: white;
+      padding: 48px 28px 40px;
+      border-radius: 16px;
+      margin-bottom: 32px;
+      box-shadow: 0 8px 32px rgba(0, 77, 64, 0.25);
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    header p {
+      opacity: 0.92;
+      font-size: 1.05rem;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      margin-top: 14px;
+    }
+    nav.toc {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 22px 26px;
+      margin-bottom: 28px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    nav.toc h2 {
+      font-size: 1.05rem;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    nav.toc ol {
+      padding-right: 22px;
+      color: var(--primary-light);
+    }
+    nav.toc a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+    nav.toc a:hover { text-decoration: underline; }
+    section {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 28px 30px;
+      margin-bottom: 22px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    section h2 {
+      color: var(--primary);
+      font-size: 1.35rem;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--accent);
+    }
+    section h3 {
+      color: var(--primary-light);
+      font-size: 1.08rem;
+      margin: 18px 0 8px;
+    }
+    p { margin-bottom: 12px; }
+    ul, ol { padding-right: 22px; margin-bottom: 12px; }
+    li { margin-bottom: 6px; }
+    code, .code {
+      background: #E8F5E9;
+      color: #1B5E20;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.9em;
+    }
+    pre {
+      background: #263238;
+      color: #ECEFF1;
+      padding: 16px 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      margin: 12px 0 16px;
+      direction: ltr;
+      text-align: left;
+    }
+    .tip {
+      background: var(--accent);
+      border-right: 4px solid var(--primary);
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+    }
+    .tip strong { color: var(--primary); }
+    .warn {
+      background: #FFF8E1;
+      border-right: 4px solid var(--warn);
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 18px;
+      font-size: 0.95rem;
+    }
+    th {
+      background: var(--primary);
+      color: white;
+      padding: 10px 12px;
+      text-align: right;
+    }
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    tr:nth-child(even) { background: #FAFAFA; }
+    .soft-promo {
+      background: linear-gradient(90deg, #E0F2F1 0%, #F1F8E9 100%);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 18px 0;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .soft-promo strong { color: var(--primary); }
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    footer a { color: var(--primary-light); text-decoration: none; }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 14px 0;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .flow span {
+      background: var(--accent);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+    .flow .arrow { background: transparent; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>راهنمای کاربری iMat Warehouse</h1>
+      <p>سیستم کنترل مواد و انبار هوشمند برای پروژه‌های EPC نفت، گاز و پتروشیمی</p>
+      <div class="badge">نسخه ۲.۲ · آفلاین و تحت شبکه</div>
+    </header>
+
+    <nav class="toc">
+      <h2>فهرست مطالب</h2>
+      <ol>
+        <li><a href="#intro">iMat چیست و برای چه کسانی ساخته شده؟</a></li>
+        <li><a href="#install">نصب و راه‌اندازی</a></li>
+        <li><a href="#first-run">شروع کار (جریان اصلی اسناد)</a></li>
+        <li><a href="#database">انتخاب دیتابیس: SQLite یا SQL Server</a></li>
+        <li><a href="#ai">قابلیت‌های هوشمند (پیش‌بینی و دستیار)</a></li>
+        <li><a href="#roles">نقش‌های کاربری</a></li>
+        <li><a href="#tips">نکات کاربردی و عیب‌یابی</a></li>
+        <li><a href="#support">پشتیبانی</a></li>
+      </ol>
+    </nav>
+
+    <!-- 1 -->
+    <section id="intro">
+      <h2>۱. iMat چیست و برای چه کسانی ساخته شده؟</h2>
+      <p>
+        <strong>iMat Warehouse</strong> یک نرم‌افزار دسکتاپ تخصصی برای مدیریت موجودی و اسناد انبار در پروژه‌های
+        <strong>EPC</strong> (مهندسی، تأمین و اجرا) است. برخلاف نرم‌افزارهای عمومی انبارداری،
+        از همان ابتدا برای اسناد واقعی پروژه‌های صنعتی طراحی شده:
+      </p>
+      <ul>
+        <li>MRR – گزارش دریافت مواد</li>
+        <li>MIV – حواله خروج مواد</li>
+        <li>MTR – انتقال بین انبارها</li>
+        <li>OS&D – گزارش Excess / Shortage / Damage</li>
+        <li>QC Release، Preservation و ردیابی شماره ذوب (Heat No)</li>
+      </ul>
+      <p>
+        این نرم‌افزار هم می‌تواند کاملاً <strong>آفلاین</strong> روی یک لپ‌تاپ کار کند
+        و هم در محیط شبکه با <strong>SQL Server</strong> به صورت چندکاربره استفاده شود.
+      </p>
+      <div class="soft-promo">
+        تیم‌های کنترل مواد و انبار پروژه‌های نفت و گاز معمولاً با پراکندگی داده‌ها،
+        اکسل‌های موازی و ریسک اشتباه در موجودی مواجه‌اند.
+        <strong>iMat</strong> دقیقاً برای کاهش همین دردسرها ساخته شده است.
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section id="install">
+      <h2>۲. نصب و راه‌اندازی</h2>
+      <h3>پیش‌نیازها</h3>
+      <ul>
+        <li>ویندوز ۱۰/۱۱ (یا لینوکس / مک)</li>
+        <li>پایتون ۳.۹ یا بالاتر</li>
+        <li>حدود ۵۰۰ مگابایت فضای آزاد</li>
+      </ul>
+
+      <h3>نصب از سورس</h3>
+      <pre>git clone https://github.com/Tahmoures54/MaterialAgent.git
+cd MaterialAgent
+python -m venv venv
+
+# ویندوز:
+venv\Scripts\activate
+
+# لینوکس / مک:
+source venv/bin/activate
+
+pip install -r requirements.txt
+python main.py</pre>
+
+      <div class="tip">
+        <strong>نکته:</strong> برای استفاده از SQL Server بعداً کافی است
+        <code>pyodbc</code> و درایور ODBC مایکروسافت را نصب کنید.
+        جزئیات در بخش دیتابیس آمده است.
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section id="first-run">
+      <h2>۳. شروع کار — جریان اصلی اسناد</h2>
+      <p>جریان استاندارد در iMat بسیار شبیه فرآیند واقعی انبار پروژه‌های EPC است:</p>
+
+      <div class="flow">
+        <span>MRR (دریافت)</span>
+        <span class="arrow">←</span>
+        <span>QC Release</span>
+        <span class="arrow">←</span>
+        <span>MIV (صدور)</span>
+      </div>
+
+      <ol>
+        <li>کالاها را در <strong>Material Master</strong> تعریف کنید.</li>
+        <li>مکان‌های انبار (Warehouse → Rack → Bin) را بسازید.</li>
+        <li>با سند <strong>MRR</strong> مواد را وارد قرنطینه کنید.</li>
+        <li>با <strong>QC Release</strong> وضعیت را به Accepted یا Rejected تغییر دهید.</li>
+        <li>با سند <strong>MIV</strong> مواد پذیرفته‌شده را صادر کنید.</li>
+      </ol>
+
+      <div class="tip">
+        <strong>امنیت موجودی:</strong> اگر یک سند پیش‌نویس (Draft) را حذف کنید،
+        iMat به‌طور خودکار موجودی پست‌شده را برمی‌گرداند تا موجودی «باد» نکند.
+        این یکی از نقاط قوت نرم‌افزار نسبت به بسیاری از سیستم‌های ساده‌تر است.
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="database">
+      <h2>۴. انتخاب دیتابیس: SQLite یا SQL Server</h2>
+      <p>
+        از نسخه ۲.۲ به بعد می‌توانید بین دو موتور دیتابیس جابه‌جا شوید.
+        تنظیمات در فایل <code>app_config.json</code> قرار دارد.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>حالت</th>
+            <th>مناسب برای</th>
+            <th>توضیح</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>SQLite</strong> (پیش‌فرض)</td>
+            <td>تک‌کاربره، آفلاین، لپ‌تاپ سایت</td>
+            <td>بدون نصب سرور، سریع و قابل حمل</td>
+          </tr>
+          <tr>
+            <td><strong>SQL Server</strong></td>
+            <td>چندکاربره تحت شبکه</td>
+            <td>اتصال به سرور مرکزی سازمان</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>فعال‌سازی SQL Server</h3>
+      <ol>
+        <li>درایور <strong>ODBC Driver 17</strong> (یا ۱۸) مایکروسافت را نصب کنید.</li>
+        <li>دستور زیر را اجرا کنید:
+          <pre>pip install pyodbc</pre>
+        </li>
+        <li>در <code>app_config.json</code> بخش دیتابیس را به این شکل تنظیم کنید:</li>
+      </ol>
+
+      <pre>"database": {
+  "engine": "sqlserver",
+  "sqlserver": {
+    "enabled": true,
+    "driver": "ODBC Driver 17 for SQL Server",
+    "server": "YOUR_SERVER",
+    "port": 1433,
+    "database": "iMat",
+    "username": "imat_user",
+    "password": "********",
+    "trusted_connection": false,
+    "encrypt": true,
+    "trust_server_certificate": true
+  }
+}</pre>
+
+      <div class="warn">
+        <strong>توجه:</strong> بک‌آپ فایل‌بیس فقط در حالت SQLite در دسترس است.
+        برای SQL Server از ابزارهای استاندارد پشتیبان‌گیری خود سرور استفاده کنید.
+      </div>
+
+      <div class="soft-promo">
+        همین انعطاف‌پذیری — کار کردن هم روی لپ‌تاپ سایت بدون اینترنت و هم روی سرور مرکزی سازمان —
+        یکی از دلایلی است که <strong>iMat</strong> برای پروژه‌های EPC طراحی شده است.
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section id="ai">
+      <h2>۵. قابلیت‌های هوشمند (پیش‌بینی و دستیار)</h2>
+      <p>
+        بخش هوش مصنوعی iMat کاملاً <strong>آفلاین</strong> کار می‌کند و نیازی به اینترنت یا کلید API ندارد.
+      </p>
+
+      <h3>پیش‌بینی تقاضا</h3>
+      <ul>
+        <li>چند روش کلاسیک: میانگین متحرک، هموارسازی نمایی، رگرسیون، Holt-Winters</li>
+        <li>روش مخصوص تقاضای پراکنده (Intermittent)</li>
+        <li>Ensemble: میانگین بهترین روش‌ها برای پیش‌بینی پایدارتر</li>
+        <li>تشخیص خودکار اینکه تقاضا منظم است یا پراکنده</li>
+      </ul>
+
+      <h3>بهینه‌سازی موجودی</h3>
+      <ul>
+        <li>محاسبه EOQ (مقدار سفارش اقتصادی)</li>
+        <li>Safety Stock و نقطه سفارش (Reorder Point)</li>
+        <li>طبقه‌بندی ABC</li>
+      </ul>
+
+      <h3>دستیار پرسش و پاسخ</h3>
+      <p>
+        می‌توانید به فارسی یا انگلیسی سوال بپرسید؛ مثلاً:
+      </p>
+      <ul>
+        <li>«موجودی کالای X چقدر است؟»</li>
+        <li>«اقلام کم‌موجودی را نشان بده»</li>
+        <li>«خلاصه وضعیت انبار»</li>
+        <li>«تراکنش‌های ۷ روز اخیر»</li>
+      </ul>
+
+      <div class="soft-promo">
+        هدف این بخش جایگزین کردن مدل‌های سنگین ابری نیست؛
+        بلکه دادن بینش سریع و قابل اتکا به مسئول انبار است — دقیقاً همان چیزی که در شرایط واقعی پروژه نیاز دارید.
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="roles">
+      <h2>۶. نقش‌های کاربری</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>نقش</th>
+            <th>دسترسی اصلی</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Admin</strong></td>
+            <td>دسترسی کامل، مدیریت کاربران و لایسنس</td>
+          </tr>
+          <tr>
+            <td><strong>Operator</strong></td>
+            <td>ایجاد و ویرایش اسناد انبار و حرکات موجودی</td>
+          </tr>
+          <tr>
+            <td><strong>Technical Office</strong></td>
+            <td>درخواست مواد (MR)، MSR، ارجاع ISO/WBS</td>
+          </tr>
+          <tr>
+            <td><strong>QC Inspector</strong></td>
+            <td>QC Release، Preservation، ثبت بازرسی</td>
+          </tr>
+          <tr>
+            <td><strong>Viewer</strong></td>
+            <td>فقط مشاهده گزارش‌ها و موجودی</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 7 -->
+    <section id="tips">
+      <h2>۷. نکات کاربردی و عیب‌یابی</h2>
+      <ul>
+        <li>قبل از کار جدی، یک بار مسیر MRR → QC → MIV را با داده آزمایشی طی کنید.</li>
+        <li>اگر سند Draft را حذف کردید و موجودی برنگشت، نسخه نرم‌افزار را بررسی کنید (از ۲.۰ به بعد این رفتار سخت‌گیرانه‌تر شده).</li>
+        <li>برای تغییر موتور دیتابیس، برنامه را کاملاً ببندید و دوباره باز کنید.</li>
+        <li>لاگ‌ها در پوشه <code>logs</code> ذخیره می‌شوند؛ در صورت خطا آن‌ها را بررسی کنید.</li>
+        <li>تست‌ها را می‌توانید با دستور زیر اجرا کنید:
+          <pre>python -m pytest tests -q</pre>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 8 -->
+    <section id="support">
+      <h2>۸. پشتیبانی</h2>
+      <p>
+        در صورت نیاز به راهنمایی بیشتر یا استقرار در پروژه:
+      </p>
+      <ul>
+        <li>واتساپ: <a href="https://wa.me/989160684552" dir="ltr">+98 916 068 4552</a></li>
+        <li>وب‌سایت: <a href="https://www.imat.io" dir="ltr">www.imat.io</a></li>
+        <li>ایمیل پشتیبانی: support@imat.io</li>
+      </ul>
+      <div class="soft-promo">
+        <strong>iMat Warehouse</strong> برای تیم‌هایی ساخته شده که موجودی پروژه برایشان فقط یک عدد در اکسل نیست؛
+        بلکه بخشی از تعهد اجرایی و کنترل هزینه است.
+        اگر در حال حاضر با پراکندگی داده‌ها و ریسک اشتباه در اسناد انبار مواجه هستید،
+        همین نرم‌افزار می‌تواند نقطه شروع منظم‌تری باشد.
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        iMat Warehouse — Material Control System for EPC Projects<br />
+        <a href="https://www.imat.io">www.imat.io</a>
+        &nbsp;·&nbsp;
+        نسخه مستندات: ۲.۲
+      </p>
+    </footer>
+
+  </div>
+</body>
+</html>
