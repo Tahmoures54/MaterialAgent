@@ -2,6 +2,7 @@
 """
 Business logic for creating warehouse documents and updating inventory.
 Supports all common EPC material document types with appropriate stock changes.
+Issue documents (MIV/ISS/WOM) also update Material Request fulfilled_qty (FIFO).
 """
 
 from sqlalchemy.orm import Session
@@ -13,9 +14,9 @@ from db.models import Document, DocumentLine, AuditLog
 from logic.stock_logic import (
     add_stock, remove_stock, move_stock, normalize_heat_no
 )
+from logic.material_request_logic import record_issue_fulfillment
 
 
-# Document type categories
 RECEIPT_TYPES = {"MRR", "RCT", "MRV"}
 ISSUE_TYPES = {"MIV", "ISS", "WOM"}
 TRANSFER_TYPES = {"MTR", "TRN"}
@@ -30,12 +31,10 @@ VALID_DOC_TYPES = (
 
 
 def _receipt_qc_status(doc_type: str) -> str:
-    """MRV (return from site) lands in ACCEPTED; other receipts go to quarantine."""
     return "ACCEPTED" if doc_type == "MRV" else "QUARANTINE"
 
 
 def _normalize_line(line: Dict) -> Dict:
-    """Copy a line dict with heat number normalized."""
     normalized = dict(line)
     normalized["heat_no"] = normalize_heat_no(line.get("heat_no"))
     return normalized
@@ -48,7 +47,6 @@ def _log_audit(
     entity_id: Optional[str],
     details: str = ""
 ) -> None:
-    """Best-effort audit trail; never fail the primary operation."""
     try:
         db.add(AuditLog(
             user=user,
@@ -67,11 +65,6 @@ def generate_next_doc_number(
     doc_type: str,
     doc_date: Optional[date] = None
 ) -> str:
-    """
-    Generate the next document number for a type and date.
-
-    Format: {TYPE}-{YYYYMMDD}-NNNN  (e.g. MRR-20260911-0001)
-    """
     doc_type = (doc_type or "").upper().strip()
     if not doc_type:
         raise ValueError("Document type is required")
@@ -95,7 +88,6 @@ def generate_next_doc_number(
 
 
 def _apply_line_stock(db: Session, document: Document, line: DocumentLine, reverse: bool = False) -> None:
-    """Apply or reverse one document line's inventory effect."""
     doc_type = document.doc_type.upper().strip()
     qty = line.qty
     heat_no = normalize_heat_no(line.heat_no)
@@ -182,7 +174,6 @@ def _apply_line_stock(db: Session, document: Document, line: DocumentLine, rever
 
 
 def _validate_header(db: Session, header_data: Dict, lines_data: List[Dict]) -> str:
-    """Validate document header and lines; return normalized doc type."""
     doc_no = (header_data.get("doc_no") or "").strip()
     if not doc_no:
         raise ValueError("Document number is required")
@@ -231,16 +222,7 @@ def create_document(
 ) -> Document:
     """
     Create a document and its lines, then update inventory according to document type.
-
-    Supported document types and their inventory effects:
-        MRR, RCT  – receipt into QUARANTINE
-        MIV, ISS, WOM – issue from ACCEPTED stock
-        MSR, RES, GAT – no stock change
-        OSND – over/short/damaged adjustment (remove stock)
-        MTR, TRN – transfer between locations
-        RTV, SRN – return to vendor (remove from ACCEPTED)
-        MRV – return from site (add to ACCEPTED)
-        ADJ – generic adjustment
+    For MIV/ISS/WOM, also applies qty to open Material Request lines (FIFO).
     """
     try:
         doc_type = _validate_header(db, header_data, lines_data)
@@ -284,6 +266,10 @@ def create_document(
             db.add(doc_line)
             db.flush()
             _apply_line_stock(db, document, doc_line, reverse=False)
+            if doc_type in ISSUE_TYPES:
+                record_issue_fulfillment(
+                    db, doc_line.item_code, float(doc_line.qty or 0), reverse=False
+                )
 
         _log_audit(
             db,
@@ -343,7 +329,6 @@ def update_document_status(
 
 
 def get_document_by_no(db: Session, doc_no: str) -> Optional[Document]:
-    """Get a document by its number."""
     return db.query(Document).filter(Document.doc_no == doc_no).first()
 
 
@@ -353,7 +338,6 @@ def get_documents_by_date(
     end_date: date,
     doc_type: Optional[str] = None
 ) -> List[Document]:
-    """Get documents within a date range, optionally filtered by type."""
     query = db.query(Document).filter(
         Document.doc_date.between(start_date, end_date)
     ).order_by(Document.doc_date.desc())
@@ -365,13 +349,7 @@ def get_documents_by_date(
 
 
 def delete_document(db: Session, document_id: int) -> None:
-    """
-    Delete a DRAFT document and reverse any stock movements it posted.
-
-    Raises:
-        ValueError: If document is missing, not DRAFT, or stock cannot be reversed
-                    (for example because the lot was already QC-released or issued).
-    """
+    """Delete a DRAFT document, reverse stock, and reverse MR fulfillment if issue."""
     doc = db.query(Document).filter(Document.id == document_id).first()
     if not doc:
         raise ValueError(f"Document with id {document_id} not found")
@@ -380,9 +358,12 @@ def delete_document(db: Session, document_id: int) -> None:
         raise ValueError("Only DRAFT documents can be deleted")
 
     try:
-        # Reverse in reverse line order so partial same-lot postings unwind cleanly
         for line in reversed(list(doc.lines)):
             _apply_line_stock(db, doc, line, reverse=True)
+            if doc.doc_type in ISSUE_TYPES:
+                record_issue_fulfillment(
+                    db, line.item_code, float(line.qty or 0), reverse=True
+                )
 
         _log_audit(db, None, "DELETE", doc.doc_no, f"reversed {len(doc.lines)} line(s)")
         db.delete(doc)
