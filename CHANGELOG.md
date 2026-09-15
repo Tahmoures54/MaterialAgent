@@ -11,6 +11,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - UI polish and first-run experience improvements
 - Deeper AI forecasting validation
 - Full Persian UI strings
+- UI settings dialog for switching database engine
+
+## [2.2.0] - 2026-09-15
+
+### Added (Database)
+- **SQL Server support** via configuration
+  - Set `database.engine = "sqlserver"` in `app_config.json`
+  - Fill the `database.sqlserver` section (server, database, username/password or Trusted Connection)
+  - Uses `mssql+pyodbc` under the hood
+- Helper functions `is_sqlite()` / `is_sqlserver()`
+- Safe URL masking in logs (password not printed)
+
+### Notes
+- SQLite remains the **default** and recommended for single-user / offline use
+- For network multi-user deployments, switch to SQL Server
+- Requires `pyodbc` + Microsoft ODBC Driver 17/18 for SQL Server (optional dependency)
 
 ## [2.1.0] - 2026-09-15
 
