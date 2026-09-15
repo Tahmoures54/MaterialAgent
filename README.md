@@ -26,12 +26,8 @@
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
 - [User Roles](#-user-roles)
-- [Module Overview](#-module-overview)
-- [Database Schema](#-database-schema)
-- [Configuration](#-configuration)
-- [Development](#-development)
 - [Testing](#-testing)
-- [Deployment](#-deployment)
+- [Development](#-development)
 - [Support](#-support)
 - [License](#-license)
 
@@ -141,8 +137,8 @@
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/imat/imat-warehouse.git
-cd imat-warehouse
+git clone https://github.com/Tahmoures54/MaterialAgent.git
+cd MaterialAgent
 
 # 2. Create virtual environment
 python -m venv venv
@@ -158,3 +154,86 @@ pip install -r requirements.txt
 
 # 5. Run the application
 python main.py
+```
+
+---
+
+## 🚀 Quick Start
+
+1. Run `python main.py`
+2. Create an Admin account on first launch (or use the default if provided)
+3. Go to **Product / Material Master** and add your items
+4. Define warehouse locations (Warehouse → Rack → Bin)
+5. Start creating documents: **MRR** (Material Receiving Report) → QC Release → **MIV** (Material Issue Voucher)
+
+---
+
+## 👤 User Roles
+
+| Role | Main Permissions |
+|------|------------------|
+| **Admin** | Full access, user management, license, configuration |
+| **Operator** | Create/edit warehouse documents, stock movements |
+| **Technical Office** | Material Requests, MSR, ISO/WBS tracking |
+| **QC Inspector** | QC Release, preservation, inspection records |
+| **Viewer** | Read-only access to reports and stock |
+
+---
+
+## 🧪 Testing
+
+```bash
+# Install test dependencies (already in requirements.txt)
+pip install -r requirements.txt
+
+# Run all tests
+python -m pytest tests -q
+```
+
+The project currently includes regression tests covering:
+- Inventory integrity (reverse stock on draft deletion)
+- Document numbering uniqueness & sequencing
+- Stock allocation / deallocation
+- QC status rules
+- Core database and report helpers
+
+---
+
+## 🛠 Development
+
+Project structure (high level):
+
+```
+MaterialAgent/
+├── main.py              # Application entry point
+├── db/                 # Database models & session
+├── logic/              # Business logic (inventory, documents, stock...)
+├── ui/                 # PyQt6 dialogs and main window
+├── ai/                 # Forecasting, ABC, EOQ, helpers
+├── config/             # Configuration management
+├── utils/              # Helpers, calculations, export
+├── tests/              # Pytest suite
+├── resources/          # Icons, styles, help files
+└── requirements.txt
+```
+
+Key recent improvements (inventory hardening):
+- Deleting a **DRAFT** document now correctly reverses posted stock
+- Invalid quantities and QC statuses are rejected
+- Document numbers are unique and sequential
+- SQLite WAL + foreign keys enabled
+- Portable backup path
+
+---
+
+## 📞 Support
+
+- WhatsApp: [+98 916 068 4552](https://wa.me/989160684552)
+- GitHub Issues: Use the Issues tab in this repository
+
+---
+
+## 📜 License
+
+Proprietary. All rights reserved.  
+See [https://www.imat.io/license](https://www.imat.io/license) for details.
