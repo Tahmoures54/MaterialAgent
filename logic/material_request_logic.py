@@ -140,26 +140,17 @@ def get_material_requests(
     project: Optional[str] = None,
     limit: int = 100
 ) -> List[MaterialRequest]:
-    """Get material requests with optional filters."""
     query = db.query(MaterialRequest)
-
     if status:
         query = query.filter(MaterialRequest.status == status)
     if discipline:
         query = query.filter(MaterialRequest.discipline == discipline)
     if project:
         query = query.filter(MaterialRequest.project == project)
-
-    return query.order_by(
-        MaterialRequest.created_at.desc()
-    ).limit(limit).all()
+    return query.order_by(MaterialRequest.created_at.desc()).limit(limit).all()
 
 
-def get_material_request_by_no(
-    db: Session,
-    request_no: str
-) -> Optional[MaterialRequest]:
-    """Get a material request by its number."""
+def get_material_request_by_no(db: Session, request_no: str) -> Optional[MaterialRequest]:
     return db.query(MaterialRequest).filter(
         MaterialRequest.request_no == request_no
     ).first()
@@ -170,14 +161,14 @@ def record_issue_fulfillment(
     item_code: str,
     qty: float,
     reverse: bool = False,
+    request_no: Optional[str] = None,
 ) -> float:
     """
     Apply (or reverse) an issue quantity against open Material Request lines.
 
-    Matching is FIFO by request_no then line_number for lines with remaining qty
-    on requests in PENDING / APPROVED / PARTIAL.
-
-    Returns the quantity applied to MR lines (may be less than qty if no open demand).
+    If request_no is provided, only that Material Request is updated.
+    Otherwise FIFO by request_no then line_number for open lines
+    on PENDING / APPROVED / PARTIAL requests.
     """
     if not item_code or qty is None:
         return 0.0
@@ -188,19 +179,21 @@ def record_issue_fulfillment(
 
     open_statuses = ("PENDING", "APPROVED", "PARTIAL")
 
-    lines = (
+    q = (
         db.query(MaterialRequestLine)
         .join(MaterialRequest, MaterialRequestLine.request_id == MaterialRequest.id)
         .filter(
             MaterialRequestLine.item_code == item_code.strip(),
             MaterialRequest.status.in_(open_statuses),
         )
-        .order_by(
-            MaterialRequest.request_no.asc(),
-            MaterialRequestLine.line_number.asc(),
-        )
-        .all()
     )
+    if request_no and str(request_no).strip():
+        q = q.filter(MaterialRequest.request_no == str(request_no).strip())
+
+    lines = q.order_by(
+        MaterialRequest.request_no.asc(),
+        MaterialRequestLine.line_number.asc(),
+    ).all()
 
     applied = 0.0
     touched_request_ids = set()
@@ -236,7 +229,6 @@ def record_issue_fulfillment(
 
 
 def _refresh_request_status_from_lines(db: Session, request_id: int) -> None:
-    """Set PARTIAL / CONVERTED based on line fulfillment totals."""
     req = db.query(MaterialRequest).filter(MaterialRequest.id == request_id).first()
     if not req or req.status in ("REJECTED", "CANCELLED"):
         return
@@ -248,10 +240,7 @@ def _refresh_request_status_from_lines(db: Session, request_id: int) -> None:
     totals_needed = sum(float(ln.qty or 0) for ln in lines)
     totals_done = sum(float(ln.fulfilled_qty or 0) for ln in lines)
 
-    if totals_needed <= 0:
-        return
-
-    if totals_done <= 0:
+    if totals_needed <= 0 or totals_done <= 0:
         return
     if totals_done + 1e-9 >= totals_needed:
         req.status = "CONVERTED"
