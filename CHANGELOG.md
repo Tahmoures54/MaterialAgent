@@ -1,70 +1,51 @@
 # Changelog
 
-All notable changes to iMat Warehouse (MaterialAgent) will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-
 ## [Unreleased]
 
 ### Planned
-- Packaging (Windows executable)
-- UI polish and first-run experience improvements
-- Deeper AI forecasting validation
-- Full Persian UI strings
-- UI settings dialog for switching database engine
+- Restore full visual style of help_fa/help_en from git history if needed
+- Wire remaining Persian UI strings across all dialogs
+- Deeper offline AI backtesting on real project extracts
+
+## [2.3.0] - 2026-09-15
+
+### Added
+- `ui/database_settings_dialog.py` — GUI to switch SQLite ↔ SQL Server (save to config, restart required)
+- `docs/DEPLOYMENT.md` — single-user and multi-user network checklist
+- `docs/DEVELOPER.md` — architecture and API notes for contributors
+- `packaging/imat.spec` + `packaging/build_windows.ps1` — PyInstaller Windows build
+- SQL Server URL builder tests
+
+### Fixed
+- Module-level `engine` proxy restored (`from db.database import engine` works again)
+
+### Improved
+- Start dialog shows SQL Server + ensemble AI highlights (v2.2 branding)
+
+### Note for integrators
+Open database settings from code:
+```python
+from ui.database_settings_dialog import DatabaseSettingsDialog
+DatabaseSettingsDialog(parent).exec()
+```
+Hook into `MainWindow.on_settings` (admin only) if not already wired in your branch.
 
 ## [2.2.0] - 2026-09-15
 
-### Added (Database)
-- **SQL Server support** via configuration
-  - Set `database.engine = "sqlserver"` in `app_config.json`
-  - Fill the `database.sqlserver` section (server, database, username/password or Trusted Connection)
-  - Uses `mssql+pyodbc` under the hood
-- Helper functions `is_sqlite()` / `is_sqlserver()`
-- Safe URL masking in logs (password not printed)
-
-### Notes
-- SQLite remains the **default** and recommended for single-user / offline use
-- For network multi-user deployments, switch to SQL Server
-- Requires `pyodbc` + Microsoft ODBC Driver 17/18 for SQL Server (optional dependency)
+### Added
+- SQL Server support via `app_config.json` (`database.engine` + `sqlserver` block)
 
 ## [2.1.0] - 2026-09-15
 
 ### Added (AI)
-- **Ensemble forecasting**: averages the top-N best methods for more robust predictions
-- **Intermittent demand** method (Croston-inspired) for sparse / many-zero series
-- `demand_profile()` diagnostic (zero ratio, intermittency flag, average when demand occurs)
-- `method_used` field in prediction results for transparency
-
-### Improved
-- Automatic method selection now includes the new intermittent model
-- Better handling of sparse demand data in `predict_demand(method="auto")`
-
-### Tests
-- New unit tests covering ensemble, intermittent demand and demand profile
+- Ensemble forecasting, intermittent demand, `demand_profile()`
 
 ## [2.0.0] - 2026-09-15
 
-### Added
-- `requirements.txt` and `pytest.ini`
-- Regression tests for inventory integrity, document numbering, allocation, and QC rules
-- Portable backup path (`backups/` folder)
-- Support for injected database session in inventory/report helpers (better test isolation)
-
-### Fixed / Hardened
-- Deleting a **DRAFT** document now correctly reverses posted stock (MRR / MIV / MTR / RTV / OSND)
-- Stock movements reject zero, negative, and invalid QC statuses
-- Document numbers are unique and sequential (`TYPE-YYYYMMDD-NNNN`)
-- Blank heat numbers normalize to `N/A`
-- SQLite now enables WAL mode, foreign keys, and busy timeout
-- Single-instance lock is kept alive for the process lifetime
-- Config manager deep-merges settings without writing env overlays back to JSON
-
-### Documentation
-- README rewritten and completed (correct clone URL, Quick Start, Roles, Testing, Development sections)
-- This CHANGELOG added
+### Hardened
+- Draft delete reverses stock, unique doc numbers, SQLite WAL/FK, session injection for tests
 
 ## [1.0.0] - 2026-07-27
 
 ### Added
-- Initial full project release (PyQt6 + SQLite material control system for EPC projects)
+- Initial release

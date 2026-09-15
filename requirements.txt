@@ -7,7 +7,7 @@ PyQt6>=6.5.0
 # Database
 SQLAlchemy>=1.4,<3.0
 
-# Optional: Microsoft SQL Server support (only needed when database.engine = "sqlserver")
+# Optional: Microsoft SQL Server support (when database.engine = "sqlserver")
 # pyodbc>=4.0.39
 # Also install "ODBC Driver 17 for SQL Server" (or 18) from Microsoft.
 
@@ -21,3 +21,4 @@ reportlab>=3.6.0
 
 # Tests
 pytest>=7.0.0
+pytest-cov>=4.0.0
